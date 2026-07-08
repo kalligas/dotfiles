@@ -17,20 +17,9 @@ in
   fonts.fontconfig.enable = true;
 
   home.packages = with pkgs; [
-    bat
-    delta
-    fd
     fzf
     jq
-    lazygit
-    lsd
-    neovim
-    ripgrep
-    starship
-    tmux
     tree-sitter
-    vivid
-    yazi
   ];
 
   home.sessionPath = [
@@ -47,7 +36,7 @@ in
 
   programs.git = {
     enable = true;
-    extraConfig = {
+    settings = {
       core.pager = "delta";
       interactive.diffFilter = "delta --color-only";
       include.path = "~/.config/delta/themes/cyberdream.gitconfig";

@@ -30,6 +30,7 @@
   nix-homebrew = {
     enable = true;
     inherit user;
+    autoMigrate = true;
   };
 
   homebrew = {
@@ -38,13 +39,25 @@
     onActivation.autoUpdate = true;
     onActivation.extraFlags = [ "--force" ];
 
-    brews = [ ];
+    brews = [
+      "bat"
+      "fd"
+      "git-delta"
+      "lazygit"
+      "lsd"
+      "neovim"
+      "ripgrep"
+      "starship"
+      "tmux"
+      "vivid"
+      "yazi"
+    ];
 
     casks = [
       "wezterm"
+      "font-go-mono-nerd-font"
       "font-jetbrains-mono-nerd-font"
       "font-symbols-only-nerd-font"
-      "font-go-mono-nerd-font"
     ];
   };
 }
