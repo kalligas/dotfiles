@@ -58,6 +58,8 @@ homebrew.onActivation.cleanup = "zap";
 
 Anything installed through Homebrew but not listed in `configuration.nix` can be removed during a rebuild. CLI/dev tools are intentionally managed by Nix through `home.nix`; use Homebrew only for GUI apps, fonts, and macOS-native casks that are listed in `configuration.nix`.
 
+Home Manager links are forced. If a managed file or directory already exists, the repo-managed version replaces it during activation instead of creating another backup.
+
 ## WSL Setup
 
 On Windows, first install WSL:

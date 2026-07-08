@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   pkgs,
   user,
   ...
@@ -8,6 +9,10 @@
 let
   dotfiles = "${config.home.homeDirectory}/.dotfiles";
   link = path: config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/${path}";
+  forceLink = path: {
+    source = link path;
+    force = true;
+  };
 in
 {
   home.username = user;
@@ -67,15 +72,20 @@ in
     initContent = builtins.readFile ./home/.zshrc;
   };
 
-  home.file.".config/wezterm".source = link ".config/wezterm";
-  home.file.".config/nvim".source = link ".config/nvim";
-  home.file.".config/tmux".source = link ".config/tmux";
-  home.file.".config/starship.toml".source = link ".config/starship.toml";
-  home.file.".config/bat".source = link ".config/bat";
-  home.file.".config/delta".source = link ".config/delta";
-  home.file.".config/lazygit".source = link ".config/lazygit";
-  home.file.".config/lsd".source = link ".config/lsd";
-  home.file.".config/vivid".source = link ".config/vivid";
-  home.file.".config/yazi".source = link ".config/yazi";
-  home.file.".config/treehouse".source = link ".config/treehouse";
+  home.activation.removeExistingZshrc =
+    lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
+      rm -rf -- "${config.home.homeDirectory}/.zshrc"
+    '';
+
+  home.file.".config/wezterm" = forceLink ".config/wezterm";
+  home.file.".config/nvim" = forceLink ".config/nvim";
+  home.file.".config/tmux" = forceLink ".config/tmux";
+  home.file.".config/starship.toml" = forceLink ".config/starship.toml";
+  home.file.".config/bat" = forceLink ".config/bat";
+  home.file.".config/delta" = forceLink ".config/delta";
+  home.file.".config/lazygit" = forceLink ".config/lazygit";
+  home.file.".config/lsd" = forceLink ".config/lsd";
+  home.file.".config/vivid" = forceLink ".config/vivid";
+  home.file.".config/yazi" = forceLink ".config/yazi";
+  home.file.".config/treehouse" = forceLink ".config/treehouse";
 }
