@@ -1,0 +1,5 @@
+require("config.options")
+require("config.keymaps")
+require("config.lazy")
+vim.api.nvim_set_hl(0, "LineNr", { fg = "#B8B8B8" })
+vim.api.nvim_set_hl(0, "CursorLineNr", { fg = "#E5E5E5", bold = true })

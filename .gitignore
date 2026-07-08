@@ -1,0 +1,6 @@
+.DS_Store
+.direnv/
+.no-mistakes/
+result
+result-*
+*.log

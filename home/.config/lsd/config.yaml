@@ -1,0 +1,7 @@
+color:
+  when: auto
+  theme: custom
+
+date: relative
+icons:
+  when: auto

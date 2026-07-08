@@ -1,0 +1,6 @@
+# User-level Treehouse config. Repo-level treehouse.toml can override
+# repo-safe settings, but lifecycle hooks only run from this user config.
+max_trees = 8
+
+# Empty/default root is ~/.treehouse. Keep it portable across macOS and WSL.
+# root = "$HOME/.treehouse"

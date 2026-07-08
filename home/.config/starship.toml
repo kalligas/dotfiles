@@ -1,0 +1,60 @@
+add_newline = true
+command_timeout = 1000
+palette = "cyberdream"
+
+format = "$directory$git_branch$git_status$nodejs$python$rust$golang$cmd_duration\n$character"
+
+[palettes.cyberdream]
+bg = "#16181a"
+bg_alt = "#1e2124"
+bg_highlight = "#3c4048"
+fg = "#ffffff"
+grey = "#7b8496"
+blue = "#5ea1ff"
+green = "#5eff6c"
+cyan = "#5ef1ff"
+red = "#ff6e5e"
+yellow = "#f1ff5e"
+magenta = "#ff5ef1"
+pink = "#ff5ea0"
+orange = "#ffbd5e"
+purple = "#bd5eff"
+
+[character]
+success_symbol = "[>](bold green)"
+error_symbol = "[>](bold red)"
+
+[directory]
+style = "bold blue"
+truncation_length = 3
+truncate_to_repo = false
+
+[git_branch]
+format = "[$symbol$branch]($style) "
+style = "bold purple"
+symbol = "git:"
+
+[git_status]
+format = "[$all_status$ahead_behind]($style) "
+style = "bold orange"
+
+[cmd_duration]
+format = "[$duration]($style) "
+min_time = 500
+style = "grey"
+
+[nodejs]
+format = "[node $version]($style) "
+style = "green"
+
+[python]
+format = "[py $version]($style) "
+style = "yellow"
+
+[rust]
+format = "[rs $version]($style) "
+style = "red"
+
+[golang]
+format = "[go $version]($style) "
+style = "cyan"
