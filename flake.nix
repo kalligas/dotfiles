@@ -37,6 +37,7 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
+            home-manager.backupFileExtension = "before-nix";
             home-manager.extraSpecialArgs = {
               inherit user;
             };
