@@ -10,6 +10,7 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 - Terminal/editor style: Cyberdream dark palette, blurred/translucent WezTerm, transparent Neovim, glass-friendly tmux.
 - CLI theming: Cyberdream Starship, Bat, Delta, LazyGit, Yazi, LSD, and Vivid.
 - Workflow helpers: Treehouse aliases/functions and tmux aliases.
+- tmux help: `Ctrl-b /` opens `docs/tmux.md` in a popup; `Ctrl-b ?` shows all bindings.
 
 ## Fresh macOS Setup
 
