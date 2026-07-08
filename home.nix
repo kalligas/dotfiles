@@ -17,9 +17,20 @@ in
   fonts.fontconfig.enable = true;
 
   home.packages = with pkgs; [
+    bat
+    delta
+    fd
     fzf
     jq
+    lazygit
+    lsd
+    neovim
+    ripgrep
+    starship
+    tmux
     tree-sitter
+    vivid
+    yazi
   ];
 
   home.sessionPath = [

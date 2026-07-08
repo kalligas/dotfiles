@@ -39,19 +39,7 @@
     onActivation.autoUpdate = true;
     onActivation.extraFlags = [ "--force" ];
 
-    brews = [
-      "bat"
-      "fd"
-      "git-delta"
-      "lazygit"
-      "lsd"
-      "neovim"
-      "ripgrep"
-      "starship"
-      "tmux"
-      "vivid"
-      "yazi"
-    ];
+    brews = [ ];
 
     casks = [
       "wezterm"

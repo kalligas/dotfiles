@@ -6,8 +6,7 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 
 - macOS defaults: dark mode, fast key repeat, clean Finder/Dock defaults, tap-to-click.
 - Homebrew casks: WezTerm and Nerd Font fallbacks.
-- Homebrew formulas: Neovim, Starship, tmux, ripgrep, fd, lazygit, yazi, lsd, vivid, bat, and delta.
-- Nix user packages: fzf, jq, and tree-sitter.
+- Nix user packages: Neovim, Starship, tmux, ripgrep, fd, fzf, jq, lazygit, yazi, lsd, vivid, bat, delta, and tree-sitter.
 - Terminal/editor style: Cyberdream dark palette, blurred/translucent WezTerm, transparent Neovim, glass-friendly tmux.
 - CLI theming: Cyberdream Starship, Bat, Delta, LazyGit, Yazi, LSD, and Vivid.
 - Workflow helpers: Treehouse aliases/functions and tmux aliases.
@@ -57,7 +56,7 @@ git config --global user.email you@example.com
 homebrew.onActivation.cleanup = "zap";
 ```
 
-Anything installed through Homebrew but not listed in `configuration.nix` can be removed during a rebuild. The current formula/cask list mirrors the Homebrew tools that were already installed before migration. Add new casks or formulas there before running `bootstrap.sh` or `rebuild.sh` if you want Homebrew to keep them.
+Anything installed through Homebrew but not listed in `configuration.nix` can be removed during a rebuild. CLI/dev tools are intentionally managed by Nix through `home.nix`; use Homebrew only for GUI apps, fonts, and macOS-native casks that are listed in `configuration.nix`.
 
 ## WSL Setup
 
