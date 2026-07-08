@@ -70,6 +70,7 @@ config.font_size = 12.5
 
 config.keys = {
 	{ key = "P", mods = "CTRL|SHIFT", action = act.ActivateCommandPalette },
+	{ key = "f", mods = "CTRL|SUPER", action = act.ToggleFullScreen },
 	{ key = "\\", mods = "CTRL|SHIFT", action = act.SplitHorizontal({ domain = "CurrentPaneDomain" }) },
 	{ key = "-", mods = "CTRL|SHIFT", action = act.SplitVertical({ domain = "CurrentPaneDomain" }) },
 	{ key = "X", mods = "CTRL|SHIFT", action = act.CloseCurrentPane({ confirm = true }) },
