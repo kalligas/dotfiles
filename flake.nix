@@ -3,6 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
+    nixpkgs-herdr.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
     nix-darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-26.05";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
@@ -17,15 +18,20 @@
     inputs@{
       self,
       nixpkgs,
+      nixpkgs-herdr,
       nix-darwin,
       nix-homebrew,
       home-manager,
     }:
     let
       user = "michaliskalligas";
+      system = "aarch64-darwin";
+      herdrPkgs = import nixpkgs-herdr { inherit system; };
     in
     {
       darwinConfigurations."mac" = nix-darwin.lib.darwinSystem {
+        inherit system;
+
         specialArgs = {
           inherit user;
         };
@@ -38,7 +44,7 @@
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.extraSpecialArgs = {
-              inherit user;
+              inherit user herdrPkgs;
             };
             home-manager.users.${user} = import ./home.nix;
           }

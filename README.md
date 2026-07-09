@@ -6,11 +6,11 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 
 - macOS defaults: dark mode, fast key repeat, clean Finder/Dock defaults, tap-to-click.
 - Homebrew casks: WezTerm and Nerd Font fallbacks.
-- Nix user packages: Neovim, Starship, tmux, ripgrep, fd, fzf, jq, lazygit, yazi, lsd, vivid, bat, delta, and tree-sitter.
-- Terminal/editor style: Cyberdream dark palette, blurred/translucent WezTerm, transparent Neovim, glass-friendly tmux.
+- Nix user packages: Neovim, Starship, Herdr, ripgrep, fd, fzf, jq, lazygit, yazi, lsd, vivid, bat, delta, and tree-sitter.
+- Terminal/editor style: Cyberdream dark palette, blurred/translucent WezTerm, transparent Neovim, glass-friendly Herdr.
 - CLI theming: Cyberdream Starship, Bat, Delta, LazyGit, Yazi, LSD, and Vivid.
-- Workflow helpers: Treehouse aliases/functions and tmux aliases.
-- tmux help: `Ctrl-b /` opens `docs/tmux.md` in a popup; `Ctrl-b ?` shows all bindings.
+- Workflow helpers: Treehouse aliases/functions and Herdr aliases.
+- Herdr help: `h` starts or reattaches, `Ctrl-b ?` shows all bindings, and `docs/herdr.md` has a short cheatsheet.
 
 ## Fresh macOS Setup
 
@@ -59,7 +59,7 @@ homebrew.onActivation.cleanup = "zap";
 
 Anything installed through Homebrew but not listed in `configuration.nix` can be removed during a rebuild. CLI/dev tools are intentionally managed by Nix through `home.nix`; use Homebrew only for GUI apps, fonts, and macOS-native casks that are listed in `configuration.nix`.
 
-Home Manager links are forced. If a managed file or directory already exists, the repo-managed version replaces it during activation instead of creating another backup.
+Home Manager links are forced. If a managed file or directory already exists, the repo-managed version replaces it during activation instead of creating another backup. The WSL setup script uses the same overwrite-first behavior for managed symlinks.
 
 ## WSL Setup
 

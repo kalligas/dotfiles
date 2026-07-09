@@ -3,6 +3,7 @@
   lib,
   pkgs,
   user,
+  herdrPkgs ? pkgs,
   ...
 }:
 
@@ -21,7 +22,7 @@ in
 
   fonts.fontconfig.enable = true;
 
-  home.packages = with pkgs; [
+  home.packages = (with pkgs; [
     bat
     delta
     fd
@@ -32,10 +33,11 @@ in
     neovim
     ripgrep
     starship
-    tmux
     tree-sitter
     vivid
     yazi
+  ]) ++ [
+    herdrPkgs.herdr
   ];
 
   home.sessionPath = [
@@ -79,7 +81,7 @@ in
 
   home.file.".config/wezterm" = forceLink ".config/wezterm";
   home.file.".config/nvim" = forceLink ".config/nvim";
-  home.file.".config/tmux" = forceLink ".config/tmux";
+  home.file.".config/herdr" = forceLink ".config/herdr";
   home.file.".config/starship.toml" = forceLink ".config/starship.toml";
   home.file.".config/bat" = forceLink ".config/bat";
   home.file.".config/delta" = forceLink ".config/delta";

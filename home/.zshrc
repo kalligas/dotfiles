@@ -25,10 +25,8 @@ alias ll="lsd -lah"
 alias la="lsd -a"
 alias lt="lsd --tree"
 
-alias t="tmux"
-alias tls="tmux ls"
-alias tn="tmux new -s"
-alias ta="tmux attach -t"
+alias h="herdr"
+alias hd="herdr"
 
 alias th="treehouse"
 alias thsh="treehouse"

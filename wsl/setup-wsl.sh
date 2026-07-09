@@ -23,7 +23,7 @@ if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
 fi
 
 brew update
-brew install neovim starship bat git-delta lazygit yazi lsd vivid ripgrep fd tree-sitter tmux fzf jq zsh
+brew install neovim starship bat git-delta lazygit yazi lsd vivid ripgrep fd tree-sitter herdr fzf jq zsh
 
 mkdir -p "$HOME/.local/bin"
 export PATH="$HOME/.local/bin:$PATH"
@@ -41,16 +41,13 @@ link_home() {
   target_dir="$(dirname "$target_path")"
   mkdir -p "$target_dir"
 
-  if [[ -e "$target_path" && ! -L "$target_path" ]]; then
-    mv "$target_path" "$target_path.backup-$(date +%Y%m%d-%H%M%S)"
-  fi
-
+  rm -rf -- "$target_path"
   ln -sfn "$source_path" "$target_path"
 }
 
 link_home ".zshrc"
 link_home ".config/nvim"
-link_home ".config/tmux"
+link_home ".config/herdr"
 link_home ".config/starship.toml"
 link_home ".config/bat"
 link_home ".config/delta"

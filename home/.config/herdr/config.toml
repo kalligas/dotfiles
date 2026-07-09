@@ -1,0 +1,55 @@
+onboarding = false
+
+[terminal]
+shell_mode = "auto"
+new_cwd = "follow"
+
+[theme]
+name = "terminal"
+
+[theme.custom]
+panel_bg = "reset"
+accent = "#5ef1ff"
+green = "#5eff6c"
+blue = "#5ea1ff"
+red = "#ff6e5e"
+yellow = "#f1ff5e"
+
+[ui]
+sidebar_width = 30
+sidebar_min_width = 18
+sidebar_max_width = 36
+sidebar_collapsed_mode = "compact"
+mouse_capture = true
+host_cursor = "native"
+confirm_close = true
+prompt_new_tab_name = false
+pane_borders = true
+pane_gaps = true
+hide_tab_bar_when_single_tab = true
+accent = "cyan"
+
+[ui.toast]
+delivery = "terminal"
+delay_seconds = 1
+
+[ui.toast.herdr]
+position = "bottom-right"
+
+[ui.toast.clipboard]
+enabled = true
+position = "bottom-center"
+
+[ui.sound]
+enabled = false
+
+[advanced]
+scrollback_limit_bytes = 10485760
+
+[experimental]
+pane_history = false
+allow_nested = false
+kitty_graphics = false
+
+[session]
+resume_agents_on_restore = true
