@@ -1,6 +1,7 @@
 local keymap = vim.keymap.set
 
 keymap("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear search highlight" })
+keymap("i", "<Esc>", "<Esc><cmd>silent write<CR>", { desc = "Exit insert mode and save" })
 keymap("n", "<leader>w", "<cmd>write<CR>", { desc = "Write file" })
 keymap("n", "<leader>q", "<cmd>quit<CR>", { desc = "Quit window" })
 keymap("n", "<leader>e", "<cmd>NvimTreeToggle<CR>", { desc = "Toggle file tree" })
