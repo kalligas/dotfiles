@@ -204,6 +204,14 @@ return {
 	},
 
 	{
+		"ThePrimeagen/vim-be-good",
+		cmd = "VimBeGood",
+		keys = {
+			{ "<leader>gb", "<cmd>VimBeGood<CR>", desc = "VimBeGood" },
+		},
+	},
+
+	{
 		"lukas-reineke/indent-blankline.nvim",
 		main = "ibl",
 		event = { "BufReadPost", "BufNewFile" },
@@ -221,6 +229,7 @@ return {
 			wk.setup()
 			wk.add({
 				{ "<leader>f", group = "find" },
+				{ "<leader>g", group = "games" },
 				{ "<leader>l", group = "lazy" },
 			})
 		end,
