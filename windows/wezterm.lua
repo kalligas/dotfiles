@@ -56,7 +56,7 @@ config.window_background_opacity = 0.80
 
 if is_windows then
 	config.win32_system_backdrop = "Acrylic"
-	config.default_prog = { "wsl.exe", "-d", "Ubuntu" }
+	config.default_prog = { "wsl.exe" }
 elseif is_macos then
 	config.macos_window_background_blur = 30
 end

@@ -13,4 +13,4 @@ Copy-Item -Force (Join-Path $PSScriptRoot "wezterm.lua") (Join-Path $WezTermConf
 Copy-Item -Force (Join-Path $PSScriptRoot "cyberdream.lua") (Join-Path $WezTermConfig "cyberdream.lua")
 
 Write-Host "WezTerm Cyberdream config installed at $WezTermConfig"
-Write-Host "The config launches wsl.exe -d Ubuntu by default."
+Write-Host "The config launches your default WSL distribution."
