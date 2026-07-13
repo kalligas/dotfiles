@@ -36,9 +36,10 @@ in
     tree-sitter
     vivid
     yazi
-  ]) ++ [
-    herdrPkgs.herdr
-  ];
+  ]) ++ (with herdrPkgs; [
+    codex
+    herdr
+  ]);
 
   home.sessionPath = [
     "${config.home.homeDirectory}/.local/bin"
