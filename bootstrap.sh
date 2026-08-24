@@ -22,27 +22,21 @@ fi
 echo "==> Step 2: symlink this repo to ~/.dotfiles"
 ln -sfn "$DIR" "$HOME/.dotfiles"
 
-echo "==> Step 3: personalize the configured username"
+echo "==> Step 3: configure the machine-local username"
 REAL_USER="$(whoami)"
-FLAKE_USER="$(sed -nE 's/^[[:space:]]*user = "([^"]+)";.*/\1/p' "$DIR/flake.nix" | head -n1)"
-
-if [[ -z "$FLAKE_USER" ]]; then
-  echo "    Could not find the single user line in flake.nix."
-  echo "    Edit flake.nix yourself before continuing."
-  exit 1
-elif [[ "$FLAKE_USER" != "$REAL_USER" ]]; then
-  echo "    flake.nix is configured for user \"$FLAKE_USER\", but you are \"$REAL_USER\"."
-  read -r -p "    Rewrite flake.nix's user line to \"$REAL_USER\"? [y/N] " REPLY
-  if [[ "$REPLY" == "y" || "$REPLY" == "Y" ]]; then
-    sed -i '' -E "s/^([[:space:]]*user = \")[^\"]+(\";.*)/\1${REAL_USER}\2/" "$DIR/flake.nix"
-    echo "    Updated. Review the change with: git diff flake.nix"
-  else
-    echo "    Skipped. Edit the single user line in flake.nix yourself before continuing."
-    exit 1
-  fi
-else
-  echo "    flake.nix already matches \"$REAL_USER\", nothing to do."
+MACHINE_USER_FILE="$DIR/.machine/user"
+mkdir -p "$(dirname "$MACHINE_USER_FILE")"
+if [[ ! -f "$MACHINE_USER_FILE" ]]; then
+  printf '%s\n' "$REAL_USER" > "$MACHINE_USER_FILE"
 fi
+DOTFILES_USER="$(head -n1 "$MACHINE_USER_FILE")"
+if [[ "$DOTFILES_USER" != "$REAL_USER" ]]; then
+  echo "    $MACHINE_USER_FILE contains \"$DOTFILES_USER\", but you are \"$REAL_USER\"."
+  echo "    Update that gitignored file before continuing."
+  exit 1
+fi
+export DOTFILES_USER
+echo "    Using gitignored machine user \"$DOTFILES_USER\"."
 
 echo "==> Step 4: Treehouse"
 mkdir -p "$HOME/.local/bin"
@@ -55,7 +49,8 @@ fi
 
 echo "==> Step 5: first darwin-rebuild switch"
 NIX_BIN="$(command -v nix)"
-sudo "$NIX_BIN" run github:nix-darwin/nix-darwin/nix-darwin-26.05#darwin-rebuild -- \
-  switch --flake "$HOME/.dotfiles#mac"
+sudo env DOTFILES_USER="$DOTFILES_USER" "$NIX_BIN" \
+  run github:nix-darwin/nix-darwin/nix-darwin-26.05#darwin-rebuild -- \
+  switch --flake "$HOME/.dotfiles#mac" --impure
 
 echo "==> Done. Use ./rebuild.sh for future changes."

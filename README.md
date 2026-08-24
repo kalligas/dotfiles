@@ -20,7 +20,7 @@ Clone this repo, review the files, then run:
 ./bootstrap.sh
 ```
 
-`bootstrap.sh` installs Determinate Nix if needed, symlinks this repo to `~/.dotfiles`, checks that `flake.nix` matches your macOS username, installs Treehouse into `~/.local/bin` if missing, and runs the first nix-darwin switch.
+`bootstrap.sh` installs Determinate Nix if needed, symlinks this repo to `~/.dotfiles`, records your macOS username in the gitignored `.machine/user` file, installs Treehouse into `~/.local/bin` if missing, and runs the first nix-darwin switch.
 
 After the first setup, edit files in this repo and apply changes with:
 
@@ -30,16 +30,17 @@ After the first setup, edit files in this repo and apply changes with:
 
 ## Validate Without Applying
 
-Once Nix is installed:
+Once Nix is installed, load the machine-local username and use impure evaluation:
 
 ```sh
-nix flake check --no-build
-nix build .#darwinConfigurations.mac.system --dry-run
+export DOTFILES_USER="$(cat .machine/user)"
+nix flake check --no-build --impure
+nix build .#darwinConfigurations.mac.system --dry-run --impure
 ```
 
 ## Make It Yours
 
-- Username is set once in `flake.nix` as `michaliskalligas`; `bootstrap.sh` can offer to rewrite it.
+- `flake.nix` keeps `michaliskalligas` as its portable fallback. Each Mac overrides it through the gitignored `.machine/user` file created by `bootstrap.sh`.
 - Host label is `mac`; keep `flake.nix`, `bootstrap.sh`, and `rebuild.sh` in sync if you rename it.
 - CPU target is Apple Silicon: `aarch64-darwin`.
 - Git identity is intentionally not managed. Set it per machine:

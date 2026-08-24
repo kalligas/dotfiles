@@ -24,7 +24,8 @@
       home-manager,
     }:
     let
-      user = "michaliskalligas";
+      localUser = builtins.getEnv "DOTFILES_USER";
+      user = if localUser != "" then localUser else "michaliskalligas";
       system = "aarch64-darwin";
       herdrPkgs = import nixpkgs-herdr { inherit system; };
     in

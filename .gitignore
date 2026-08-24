@@ -1,6 +1,7 @@
 .DS_Store
 .direnv/
 .no-mistakes/
+/.machine/
 result
 result-*
 *.log
