@@ -6,7 +6,7 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 
 - macOS defaults: dark mode, fast key repeat, clean Finder/Dock defaults, tap-to-click.
 - Homebrew casks: WezTerm and Nerd Font fallbacks.
-- Nix user packages: Neovim, Starship, Herdr, ripgrep, fd, fzf, jq, lazygit, yazi, lsd, vivid, bat, delta, and tree-sitter.
+- Nix user packages: Neovim, Starship, Codex, Claude Code, Herdr, ripgrep, fd, fzf, jq, lazygit, yazi, lsd, vivid, bat, delta, and tree-sitter.
 - Terminal/editor style: Cyberdream dark palette, blurred/translucent WezTerm, transparent Neovim, glass-friendly Herdr.
 - CLI theming: Cyberdream Starship, Bat, Delta, LazyGit, Yazi, LSD, and Vivid.
 - Workflow helpers: Treehouse aliases/functions and Herdr aliases.
@@ -43,11 +43,12 @@ nix build .#darwinConfigurations.mac.system --dry-run --impure
 - `flake.nix` keeps `michaliskalligas` as its portable fallback. Each Mac overrides it through the gitignored `.machine/user` file created by `bootstrap.sh`.
 - Host label is `mac`; keep `flake.nix`, `bootstrap.sh`, and `rebuild.sh` in sync if you rename it.
 - CPU target is Apple Silicon: `aarch64-darwin`.
-- Git identity is intentionally not managed. Set it per machine:
+- Git defaults to `kalligas <mkalligas1997@gmail.com>`. Override it per machine in the gitignored `.machine/gitconfig`:
 
-```sh
-git config --global user.name "Your Name"
-git config --global user.email you@example.com
+```gitconfig
+[user]
+  name = Your Name
+  email = you@example.com
 ```
 
 ## Homebrew Cleanup Warning

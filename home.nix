@@ -24,6 +24,7 @@ in
 
   home.packages = (with pkgs; [
     bat
+    claude-code
     delta
     fd
     fzf
@@ -56,15 +57,32 @@ in
   programs.git = {
     enable = true;
     settings = {
+      user = {
+        name = "kalligas";
+        email = "mkalligas1997@gmail.com";
+      };
       core.pager = "delta";
       interactive.diffFilter = "delta --color-only";
-      include.path = "~/.config/delta/themes/cyberdream.gitconfig";
+      include.path = [
+        "~/.config/delta/themes/cyberdream.gitconfig"
+        "~/.dotfiles/.machine/gitconfig"
+      ];
       delta = {
         features = "cyberdream";
         "line-numbers" = true;
         navigate = true;
       };
       merge.conflictstyle = "zdiff3";
+    };
+  };
+
+  programs.ssh = {
+    enable = true;
+    matchBlocks."github-wikifarmer" = {
+      hostname = "github.com";
+      user = "git";
+      identityFile = "~/.ssh/id_ed25519_wikifarmer";
+      identitiesOnly = true;
     };
   };
 
