@@ -12,6 +12,23 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 - Workflow helpers: Treehouse aliases/functions and Herdr aliases.
 - Herdr help: `h` starts or reattaches, `Ctrl-b ?` shows all bindings, and `docs/herdr.md` has a short cheatsheet.
 
+## Terminal Stack
+
+| Category | Tool | Purpose |
+| --- | --- | --- |
+| Shell | Zsh | Interactive command-line shell. |
+| Shell plugins | Zsh Autosuggestions, Zsh Syntax Highlighting | Suggest commands from history and highlight shell syntax. |
+| Prompt | Starship | Show the current directory, Git state, language versions, and command duration. |
+| Terminal emulator | WezTerm | Provide terminal windows, panes, fonts, transparency, and keyboard shortcuts. |
+| Workspace and session manager | Herdr | Manage terminal sessions and coding agents. |
+| Git worktree manager | Treehouse | Create, lease, and return isolated Git worktrees. |
+| Editor | Neovim | Edit code in the terminal. |
+| Editor plugin manager | lazy.nvim | Install and update Neovim plugins. |
+| Theme | Cyberdream | Keep a consistent color palette across the terminal, editor, and CLI tools. |
+| Package and configuration managers | Nix, nix-darwin, Home Manager, Homebrew | Install tools and configure macOS declaratively. |
+| Coding agents | Codex, Claude Code | Provide AI-assisted development workflows. |
+| CLI utilities | Bat, Delta, fd, fzf, jq, LazyGit, LSD, ripgrep, Tree-sitter, Vivid, Yazi | Improve file viewing, search, Git, JSON processing, syntax parsing, colors, and navigation. |
+
 ## Fresh macOS Setup
 
 Clone this repo, review the files, then run:
