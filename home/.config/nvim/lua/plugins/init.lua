@@ -18,7 +18,11 @@ return {
 					NormalFloat = { bg = "NONE" },
 					FloatBorder = { bg = "NONE" },
 					FloatTitle = { bg = "NONE" },
-					Pmenu = { bg = "NONE" },
+					Pmenu = { fg = "#ffffff", bg = "#232429" },
+					PmenuSel = { fg = "#16181a", bg = "#5ef1ff", bold = true },
+					PmenuSbar = { bg = "#3c4048" },
+					PmenuThumb = { bg = "#5ef1ff" },
+					GrugFarInputPlaceholder = { fg = "#b4bfd6", italic = true },
 					TelescopeNormal = { bg = "NONE" },
 					TelescopeBorder = { bg = "NONE" },
 					TelescopePromptNormal = { bg = "NONE" },
@@ -129,6 +133,7 @@ return {
 			{ "<leader>fg", "<cmd>Telescope live_grep<CR>", desc = "Live grep" },
 			{ "<leader>fb", "<cmd>Telescope buffers<CR>", desc = "Find buffers" },
 			{ "<leader>fh", "<cmd>Telescope help_tags<CR>", desc = "Find help" },
+			{ "<leader>gs", "<cmd>Telescope git_status<CR>", desc = "Git status" },
 		},
 		opts = {
 			defaults = {
@@ -146,6 +151,30 @@ return {
 				selection_caret = "> ",
 			},
 		},
+	},
+
+	{
+		"kdheepak/lazygit.nvim",
+		cmd = {
+			"LazyGit",
+			"LazyGitConfig",
+			"LazyGitCurrentFile",
+			"LazyGitFilter",
+			"LazyGitFilterCurrentFile",
+		},
+		dependencies = { "nvim-lua/plenary.nvim" },
+		keys = {
+			{ "<leader>gg", "<cmd>LazyGit<CR>", desc = "LazyGit" },
+		},
+	},
+
+	{
+		"MagicDuck/grug-far.nvim",
+		cmd = { "GrugFar", "GrugFarWithin" },
+		keys = {
+			{ "<leader>sr", "<cmd>GrugFar<CR>", desc = "Search and replace" },
+		},
+		opts = {},
 	},
 
 	{
@@ -229,8 +258,9 @@ return {
 			wk.setup()
 			wk.add({
 				{ "<leader>f", group = "find" },
-				{ "<leader>g", group = "games" },
+				{ "<leader>g", group = "git and games" },
 				{ "<leader>l", group = "lazy" },
+				{ "<leader>s", group = "search" },
 			})
 		end,
 	},

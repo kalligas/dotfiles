@@ -103,7 +103,10 @@ in
 
   programs.zsh = {
     enable = true;
-    autosuggestion.enable = true;
+    autosuggestion = {
+      enable = true;
+      highlight = "fg=#b4bfd6";
+    };
     syntaxHighlighting.enable = true;
     initContent = builtins.readFile ./home/.zshrc;
   };
