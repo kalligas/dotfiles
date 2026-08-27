@@ -17,8 +17,12 @@
       AppleInterfaceStyle = "Dark";
       KeyRepeat = 2;
       InitialKeyRepeat = 15;
-      _HIHideMenuBar = true;
+      _HIHideMenuBar = false;
       AppleShowAllExtensions = true;
+    };
+
+    CustomUserPreferences.NSGlobalDomain = {
+      AppleMenuBarVisibleInFullscreen = false;
     };
 
     dock.autohide = true;

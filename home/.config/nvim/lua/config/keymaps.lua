@@ -10,3 +10,5 @@ keymap("n", "<leader>fg", "<cmd>Telescope live_grep<CR>", { desc = "Live grep" }
 keymap("n", "<leader>fb", "<cmd>Telescope buffers<CR>", { desc = "Find buffers" })
 keymap("n", "<leader>fh", "<cmd>Telescope help_tags<CR>", { desc = "Find help" })
 keymap("n", "<leader>l", "<cmd>Lazy<CR>", { desc = "Plugin manager" })
+vim.keymap.set("i", "jk", "<Esc>")
+  
