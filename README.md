@@ -108,7 +108,7 @@ Clone this repo, review the files, then run:
 ./bootstrap.sh
 ```
 
-`bootstrap.sh` installs Determinate Nix if needed, symlinks this repo to `~/.dotfiles`, records your macOS username in the gitignored `.machine/user` file, installs Treehouse into `~/.local/bin` if missing, and runs the first nix-darwin switch.
+`bootstrap.sh` installs Determinate Nix if needed, symlinks this repo to `~/.dotfiles`, records your macOS username in the gitignored `.machine/user` file, installs Treehouse into `~/.local/bin` if missing, runs the first nix-darwin switch, and activates the shared Codex and Claude Code configuration from `agents/`.
 
 After the first setup, edit files in this repo and apply changes with:
 

@@ -17,9 +17,6 @@ agents/
 │   ├── settings.json         # -> ~/.claude/settings.json
 │   ├── rules/                 # -> ~/.claude/rules (Claude-only, path-scoped)
 │   └── agents/                 # -> ~/.claude/agents (Claude subagents)
-├── codex/
-│   ├── config.toml           # NOT linked — see "Codex config.toml" below
-│   └── prompts/               # NOT linked — see "Codex prompts" below
 └── templates/
     ├── AGENTS.md.tmpl        # starter for a new project's AGENTS.md
     └── init-project.sh        # scaffolds AGENTS.md/CLAUDE.md/skills in a repo
@@ -54,6 +51,10 @@ up the change immediately (or after a re-run, in copy mode; see below).
 
 ## Bootstrapping a fresh machine
 
+On macOS, the repository's top-level `bootstrap.sh` runs this installer after
+the first successful nix-darwin switch. To re-run it manually, or to activate
+new shared skills later:
+
 ```bash
 cd ~/dotfiles/agents   # or wherever this ends up cloned
 ./install.sh
@@ -82,27 +83,22 @@ a re-run.
 
 ## Codex config.toml
 
-`codex/config.toml` exists in this repo tree but is **gitignored and never
-linked**. `~/.codex/config.toml` stays a real local file, untouched by
-`install.sh`.
+The repository does not manage a Codex `config.toml`. The live
+`~/.codex/config.toml` stays a real local file, untouched by `install.sh`.
 
 Reason: on this machine it's rewritten continuously by the ChatGPT desktop
 app — `[projects."..."] trust_level` entries as you trust folders, NUX/UI
 state, and absolute machine-specific paths (`~/.codex/.tmp/...`,
 `~/.cache/codex-runtimes/...`, `/Applications/ChatGPT.app/...`). Tracking it
 would mean constant unrelated diffs and paths that wouldn't hold on another
-machine. If you want a portable reference for what a fresh Codex setup
-looked like, hand-curate a subset (model, personality, reasoning effort)
-into `codex/config.toml` as documentation — it will never be linked or
-overwrite the live file.
+machine. Keep portable behavior in shared instructions or skills rather than
+copying this machine-specific file into the repository.
 
 ## Codex prompts
 
-`codex/prompts/` exists in this tree for parity with the original design but
-is **not linked by `install.sh`**. Codex 0.153.4 (the version on this
-machine at setup time) has no custom-prompts-directory feature — that role
-is served by skills/plugins instead. If a future Codex version adds one,
-wire it up then.
+No Codex prompts directory is managed here. Reusable workflows belong in
+skills or plugins instead, avoiding documentation tied to a particular Codex
+version.
 
 ## Cowork copy-mode caveat
 
@@ -127,7 +123,7 @@ surface for coding work here. If that changes, switch with the flag above.
 
 ## Project scaffolding
 
-From a project's repo root:
+From a project's Git repository root:
 
 ```bash
 /path/to/dotagents/templates/init-project.sh              # CLAUDE.md as symlink
@@ -142,6 +138,9 @@ if it finds an `AGENTS.override.md` at the repo root: Codex reads at most
 one instruction file per directory and prefers the override, so an override
 at root **silences** the committed `AGENTS.md` for Codex rather than adding
 to it — likely not what you want if `AGENTS.md` also has real content.
+
+The script exits without changing anything when run outside a Git repository
+or from a directory below its root.
 
 Use `--import` for repos with Windows contributors (who may not handle the
 symlink the same way) or when you need Claude-specific instructions that

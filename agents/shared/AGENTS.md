@@ -51,10 +51,10 @@ me. Project-specific facts belong in that project's own AGENTS.md, not here.
   over introducing new ones, even if you'd personally do it differently.
 - Prefer explicit, readable code over clever or dense one-liners, even when
   the clever version is shorter.
-- Use rtk (Rust Token Killer, github.com/rtk-ai/rtk) to cut down on wasted
-  tokens from noisy shell output. If it isn't installed, install it
-  (brew install rtk on this machine) and run: rtk init -g
-  to wire up its Claude Code hook.
+- Use rtk (Rust Token Killer, github.com/rtk-ai/rtk) when available to reduce
+  noisy shell output. It is installed declaratively and its Claude Code hook
+  is already configured on this machine. If it is missing, report that rather
+  than installing it or running `rtk init -g` automatically.
 
 ## Universal habits
 

@@ -8,8 +8,19 @@
 #                                                              with @AGENTS.md
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+PROJECT_ROOT="$(pwd -P)"
+
+if ! GIT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+  echo "error: run this script from the root of a Git repository" >&2
+  exit 1
+fi
+GIT_ROOT="$(cd "$GIT_ROOT" && pwd -P)"
+
+if [[ "$PROJECT_ROOT" != "$GIT_ROOT" ]]; then
+  echo "error: run this script from the repository root: $GIT_ROOT" >&2
+  exit 1
+fi
 
 IMPORT_MODE=false
 for arg in "$@"; do

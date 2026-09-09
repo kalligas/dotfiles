@@ -53,4 +53,7 @@ sudo env DOTFILES_USER="$DOTFILES_USER" "$NIX_BIN" \
   run github:nix-darwin/nix-darwin/nix-darwin-26.05#darwin-rebuild -- \
   switch --flake "$HOME/.dotfiles#mac" --impure
 
+echo "==> Step 6: agent configuration"
+"$DIR/agents/install.sh"
+
 echo "==> Done. Use ./rebuild.sh for future changes."
