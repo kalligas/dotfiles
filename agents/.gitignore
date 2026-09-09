@@ -1,0 +1,24 @@
+# Codex config.toml is intentionally NOT tracked here: the ChatGPT desktop
+# app rewrites it continuously (trust_level blocks, UI/nux state, absolute
+# machine-specific paths under .codex/.tmp and .cache/codex-runtimes). It
+# stays a real local file at ~/.codex/config.toml, never symlinked from this
+# repo. See README.md "Codex config.toml" section.
+codex/config.toml
+
+# Belt-and-braces: these must never be created or modified by install.sh,
+# and must never end up tracked even by accident. They hold credentials and
+# session state, not configuration.
+.claude.json
+.claude/projects/
+.claude/todos/
+.claude/shell-snapshots/
+.claude/statsig/
+.claude/history.jsonl
+.codex/auth.json
+.codex/sessions/
+.codex/history.jsonl
+.codex/logs/
+.codex/logs_*.sqlite*
+.codex/*.sqlite*
+
+.DS_Store
