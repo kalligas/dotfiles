@@ -44,7 +44,8 @@ file lean; put everything project-specific in the project.
 | Claude Code | `~/.claude/settings.json` | `claude/settings.json` (symlink) |
 | Claude Code | `~/.claude/rules/`      | `claude/rules/` (symlink)        |
 | Claude Code | `~/.claude/agents/`     | `claude/agents/` (symlink)       |
-| Both        | `~/.claude/skills/<name>`, `<codex skills dir>/<name>` | `shared/skills/<name>/` (symlink, one per skill) |
+| Claude Code | `~/.claude/skills/<name>` | `shared/skills/<name>/` (symlink, one per skill) |
+| Codex       | `~/.agents/skills/<name>` | `shared/skills/<name>/` (symlink, one per skill) |
 
 There is one file, `shared/AGENTS.md` — edit it in the repo, both tools pick
 up the change immediately (or after a re-run, in copy mode; see below).
@@ -75,11 +76,10 @@ mkdir -p shared/skills/my-skill
 ```
 
 `install.sh` links each skill directory individually into both tools' skill
-directories — never the whole `skills/` directory, because both tools write
-their own entries into it at runtime (`~/.codex/skills/.system/` is Codex's
-bundled-skills directory; `~/.claude/skills/synced/` is Claude Code's own
-sync target). Linking the parent would either clobber those or nest oddly on
-a re-run.
+directories (`~/.agents/skills/` for Codex and `~/.claude/skills/` for Claude
+Code). It never links either parent directory, because those locations may
+also contain skills installed by other sources. Linking the parent would
+clobber those or nest oddly on a re-run.
 
 ## Codex config.toml
 

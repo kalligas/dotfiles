@@ -42,10 +42,6 @@ me. Project-specific facts belong in that project's own AGENTS.md, not here.
 
 ## Tool preferences
 
-- TODO: preferred package manager(s) per language (npm vs pnpm/yarn, pip vs
-  uv/poetry, etc).
-- TODO: preferred test runner / how to run the test suite when not obvious.
-- TODO: linter/formatter expectations (run before commit? auto-fix ok?).
 - Prefer `rg`/`fd` over `grep -r`/`find` when available.
 - Use the project's existing conventions (naming, comment density, structure)
   over introducing new ones, even if you'd personally do it differently.
@@ -63,13 +59,9 @@ me. Project-specific facts belong in that project's own AGENTS.md, not here.
   source before guessing or assuming what it is. Say briefly what you found
   and where.
 - Match commit message style to the repo's existing history.
-- TODO: default git commit message sign-off / co-author line, if any, beyond
-  what each tool already appends.
 - When you hit something outside what you were asked to do (dead code, a bug,
   a missing test) and fixing it now would bloat the change, flag it rather
   than silently expanding scope or silently ignoring it.
-- TODO: any topics/tools you never want an agent to touch without asking
-  (e.g. specific production systems, specific cloud accounts).
 
 ## Notes
 

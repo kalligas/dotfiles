@@ -25,12 +25,10 @@ for arg in "$@"; do
   esac
 done
 
-# Codex's live per-user skills directory. Confirmed by inspecting the codex
-# binary's own help/doc strings: it defaults to $CODEX_HOME/skills, i.e.
-# ~/.codex/skills when CODEX_HOME is unset. ~/.agents/skills is NOT scanned
-# by Codex (that path is only used for plugin marketplaces). Override with
-# CODEX_SKILLS_DIR if a future Codex version changes this.
-CODEX_SKILLS_DIR="${CODEX_SKILLS_DIR:-${CODEX_HOME:-$HOME/.codex}/skills}"
+# Codex's documented per-user skills directory. Keep the environment override
+# for unusual installations, but use the cross-agent ~/.agents convention by
+# default. Repository-scoped Codex skills live in .agents/skills instead.
+CODEX_SKILLS_DIR="${CODEX_SKILLS_DIR:-$HOME/.agents/skills}"
 
 # Paths this script must never create, modify, or back up. They hold
 # credentials or session state, not configuration.
@@ -146,8 +144,8 @@ link_path "$REPO/claude/agents"        "$HOME/.claude/agents"        "claude age
 SKIPPED+=("codex config.toml (intentionally not tracked/linked; see README): $HOME/.codex/config.toml")
 
 # --- shared skills, linked one directory at a time --------------------------
-# Never link the parent skills/ directory itself: both tools' installers and
-# sync features write into it (~/.codex/skills/.system, ~/.claude/skills/synced).
+# Never link a parent skills directory itself: it may contain skills installed
+# by other sources. Link only the shared skill names managed by this repository.
 mkdir -p "$HOME/.claude/skills" "$CODEX_SKILLS_DIR"
 
 shopt -s nullglob
