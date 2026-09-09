@@ -59,6 +59,9 @@ me. Project-specific facts belong in that project's own AGENTS.md, not here.
 ## Universal habits
 
 - Read a file before editing it. Don't guess at line numbers or content.
+- If you don't recognize a tool, library, or term, look it up on a reliable
+  source before guessing or assuming what it is. Say briefly what you found
+  and where.
 - Match commit message style to the repo's existing history.
 - TODO: default git commit message sign-off / co-author line, if any, beyond
   what each tool already appends.
