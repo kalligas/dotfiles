@@ -42,7 +42,7 @@
     onActivation.autoUpdate = true;
     onActivation.extraFlags = [ "--force" ];
 
-    brews = [ ];
+    brews = [ "rtk" ];
 
     casks = [
       "wezterm"
