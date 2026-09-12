@@ -48,6 +48,9 @@
     ];
 
     casks = [
+      "chatgpt"
+      "claude"
+      "visual-studio-code"
       "wezterm"
       "font-go-mono-nerd-font"
       "font-jetbrains-mono-nerd-font"
