@@ -131,13 +131,16 @@ nix build .#darwinConfigurations.mac.system --dry-run --impure
 - `flake.nix` keeps `michaliskalligas` as its portable fallback. Each Mac overrides it through the gitignored `.machine/user` file created by `bootstrap.sh`.
 - Host label is `mac`; keep `flake.nix`, `bootstrap.sh`, and `rebuild.sh` in sync if you rename it.
 - CPU target is Apple Silicon: `aarch64-darwin`.
-- Git defaults to `kalligas <mkalligas1997@gmail.com>`. Override it per machine in the gitignored `.machine/gitconfig`:
+- Git defaults to `kalligas <mkalligas1997@gmail.com>`. Repositories under
+  `~/projects/` use the identity from the gitignored `.machine/gitconfig`:
 
 ```gitconfig
 [user]
   name = Your Name
   email = you@example.com
 ```
+
+Repositories outside `~/projects/` continue to use the personal default.
 
 ## Homebrew Cleanup Warning
 

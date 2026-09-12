@@ -57,16 +57,13 @@ in
   programs.git = {
     enable = true;
     settings = {
-      user = {
-        name = "kalligas";
-        email = "mkalligas1997@gmail.com";
-      };
       core.pager = "delta";
       interactive.diffFilter = "delta --color-only";
       include.path = [
         "~/.config/delta/themes/cyberdream.gitconfig"
-        "~/.dotfiles/.machine/gitconfig"
+        "~/.dotfiles/home/.config/git/personal.gitconfig"
       ];
+      includeIf."gitdir:~/projects/".path = "~/.dotfiles/.machine/gitconfig";
       delta = {
         features = "cyberdream";
         "line-numbers" = true;
