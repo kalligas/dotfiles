@@ -13,8 +13,8 @@ me. Project-specific facts belong in that project's own AGENTS.md, not here.
 - When you finish, say plainly what's done, what you skipped, and why. No
   hedging, no over-qualifying.
 - Prefer finishing the whole task over doing the easy 80% and stopping.
-- When changing the dotfiles repo, first fetch and confirm the local branch is
-  up to date with its remote, then commit and push the finished change.
+- When changing a repo by path, check whether it has its own AGENTS.md and
+  follow those repo-local instructions in addition to this global file.
 - Once we've agreed on how to implement something non-trivial (a feature, a
   multi-file change) and there are no more judgment calls left — just
   execution — mention in one line that a faster/cheaper model could finish
