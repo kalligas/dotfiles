@@ -4,6 +4,9 @@ Deliberate decisions in this repo:
 
 - Before changing this repo, fetch and confirm the local branch is up to date
   with its remote.
+- After changing this repo, run the relevant validation script or command for
+  the files touched when one exists. If no relevant check exists, say that
+  plainly in the final response.
 - After finishing a change in this repo, commit and push it unless the user
   explicitly asks otherwise.
 - `homebrew.onActivation.cleanup = "zap"` is intentional. Keep Homebrew declarative and list anything that should survive a rebuild.
