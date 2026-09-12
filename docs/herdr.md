@@ -1,6 +1,6 @@
 # Herdr Cheatsheet
 
-Prefix means: press `Ctrl-b`, release, then press the next key.
+Prefix means: press `Ctrl-s`, release, then press the next key.
 
 ## Start
 

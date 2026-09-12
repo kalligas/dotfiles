@@ -10,7 +10,7 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 - Terminal/editor style: Cyberdream dark palette, blurred/translucent WezTerm, transparent Neovim, glass-friendly Herdr.
 - CLI theming: Cyberdream Starship, Bat, Delta, LazyGit, Yazi, LSD, and Vivid.
 - Workflow helpers: Treehouse aliases/functions and Herdr aliases.
-- Herdr help: `h` starts or reattaches, `Ctrl-b ?` shows all bindings, and `docs/herdr.md` has a short cheatsheet.
+- Herdr help: `h` starts or reattaches, `Ctrl-s ?` shows all bindings, and `docs/herdr.md` has a short cheatsheet.
 
 ## Terminal Stack
 

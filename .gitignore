@@ -7,6 +7,7 @@ result-*
 *.log
 
 # Herdr runtime state; keep only its declarative config in the repository.
-/home/.config/herdr/release-notes.json
 /home/.config/herdr/sessions/
 /home/.config/herdr/.plugins.lock
+/home/.config/herdr/release-notes.json
+/home/.config/herdr/session.json
