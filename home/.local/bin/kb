@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Filesystem-only vault helper. Never commits, pushes, or processes notes itself.
+set -euo pipefail
+
+command_name="${1:-help}"
+if [[ "$command_name" == help || "$command_name" == --help ]]; then
+  echo 'Usage: kb {init|doctor|status|diff|agent} [vault-path]'
+  echo 'An explicit path overrides KB_VAULT_PATH. No default vault is assumed.'
+  echo 'agent starts interactive Codex; other agents can open the same directory.'
+  exit 0
+fi
+vault="${2:-${KB_VAULT_PATH:-}}"
+[[ -n "$vault" ]] || { echo 'Set KB_VAULT_PATH or supply a vault path.' >&2; exit 1; }
+[[ "$vault" == /* ]] || { echo 'Use an absolute vault path.' >&2; exit 1; }
+[[ $# -le 2 ]] || { echo 'Too many arguments.' >&2; exit 1; }
+
+if [[ "$command_name" == init ]]; then
+  template="${KB_TEMPLATE_DIR:-$HOME/.dotfiles/knowledge-base/vault-template}"
+  [[ -f "$template/AGENTS.md" ]] || { echo "Missing template: $template" >&2; exit 1; }
+  [[ ! -e "$vault" && ! -L "$vault" ]] || { echo 'Refusing to overwrite an existing path.' >&2; exit 1; }
+  parent="$(dirname "$vault")"
+  [[ -d "$parent" ]] || { echo 'Create the parent directory explicitly first.' >&2; exit 1; }
+  if git -C "$parent" rev-parse --show-toplevel >/dev/null 2>&1; then
+    echo 'Refusing to create a vault inside another Git repository.' >&2; exit 1
+  fi
+  mkdir -m 700 "$vault"
+  cp -R "$template/." "$vault/"
+  git -C "$vault" init -q
+  echo "Created $vault. Review and commit the initial files before agent edits."
+  exit 0
+fi
+
+[[ -d "$vault" && -f "$vault/AGENTS.md" && -f "$vault/Inbox.md" ]] || {
+  echo 'Expected a vault with AGENTS.md and Inbox.md; nothing changed.' >&2; exit 1;
+}
+vault="$(cd "$vault" && pwd -P)"
+root="$(git -C "$vault" rev-parse --show-toplevel 2>/dev/null || true)"
+[[ "$root" == "$vault" ]] || { echo 'Vault must be its own Git repository.' >&2; exit 1; }
+
+case "$command_name" in
+  status) git -C "$vault" status --short --branch ;;
+  diff)
+    git -C "$vault" --no-pager diff
+    git -C "$vault" --no-pager diff --cached
+    echo 'Untracked files (not included in Git diffs):'
+    git -C "$vault" ls-files --others --exclude-standard
+    ;;
+  doctor)
+    failed=0
+    [[ -w "$vault" && -w "$vault/Inbox.md" ]] || { echo 'FAIL: vault/inbox not writable'; failed=1; }
+    for tool in git rg codex; do
+      command -v "$tool" >/dev/null || { echo "FAIL: missing $tool"; failed=1; }
+    done
+    git -C "$vault" rev-parse --verify HEAD >/dev/null 2>&1 || { echo 'FAIL: no committed recovery baseline'; failed=1; }
+    git -C "$vault" fsck --no-progress || failed=1
+    if [[ -e "$vault/AGENTS.override.md" ]]; then
+      echo 'FAIL: AGENTS.override.md shadows canonical instructions'; failed=1
+    fi
+    if [[ -d /Applications/Obsidian.app || -d "$HOME/Applications/Obsidian.app" ]] || command -v obsidian >/dev/null; then
+      echo 'OK: Obsidian found'
+    else
+      echo 'WARN: Obsidian not found in standard app/command locations'
+    fi
+    echo 'CHECK MANUALLY: agent login, sync completion, off-device backup and restore.'
+    echo 'This check cannot verify sync health or prove the vault is fully downloaded.'
+    exit "$failed"
+    ;;
+  agent)
+    git -C "$vault" rev-parse --verify HEAD >/dev/null 2>&1 || { echo 'Commit a recovery baseline first.' >&2; exit 1; }
+    [[ ! -e "$vault/AGENTS.override.md" ]] || { echo 'Resolve AGENTS.override.md first.' >&2; exit 1; }
+    cd "$vault"
+    exec codex
+    ;;
+  *) echo "Unknown command: $command_name" >&2; exit 1 ;;
+esac

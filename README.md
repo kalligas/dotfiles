@@ -11,6 +11,7 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 - CLI theming: Cyberdream Starship, Bat, Delta, LazyGit, Yazi, LSD, and Vivid.
 - Workflow helpers: Treehouse aliases/functions and Herdr aliases.
 - Herdr help: `h` starts or reattaches, `Ctrl-s ?` shows all bindings, and `docs/herdr.md` has a short cheatsheet.
+- Knowledge-base setup: see `docs/knowledge-base.md` for Obsidian, the `kb` helper, and safe migration boundaries.
 
 ## Terminal Stack
 

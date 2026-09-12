@@ -1,0 +1,10 @@
+.DS_Store
+.trash/
+.obsidian/
+.env
+.env.*
+*.key
+*.pem
+
+# Obsidian configuration is local for v1, including plugin secrets and UI state.
+# Notes and attachments are deliberately not ignored.

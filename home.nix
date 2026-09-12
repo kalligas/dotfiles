@@ -124,4 +124,5 @@ in
   home.file.".config/vivid" = forceLink ".config/vivid";
   home.file.".config/yazi" = forceLink ".config/yazi";
   home.file.".config/treehouse" = forceLink ".config/treehouse";
+  home.file.".local/bin/kb".source = link ".local/bin/kb";
 }
