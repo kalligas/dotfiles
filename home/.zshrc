@@ -16,6 +16,11 @@ export EDITOR="nvim"
 export VISUAL="nvim"
 export BAT_THEME="cyberdream"
 
+export NVM_DIR="$HOME/.nvm"
+if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+  . "$NVM_DIR/nvm.sh"
+fi
+
 if command -v vivid >/dev/null 2>&1; then
   export LS_COLORS="$(vivid generate cyberdream)"
 fi

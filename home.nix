@@ -32,6 +32,7 @@ in
     lazygit
     lsd
     neovim
+    nodejs
     ripgrep
     starship
     tree-sitter
@@ -94,6 +95,29 @@ in
         User = "git";
         IdentityFile = "~/.ssh/id_ed25519_wikifarmer";
         IdentitiesOnly = true;
+      };
+      "github.com" = {
+        HostName = "github.com";
+        User = "git";
+        IdentityFile = "~/.ssh/id_personal";
+        IdentitiesOnly = true;
+        AddKeysToAgent = "yes";
+        UseKeychain = "yes";
+      };
+      "github.com-kalligas" = {
+        HostName = "github.com";
+        User = "git";
+        IdentityFile = "~/.ssh/id_personal";
+        AddKeysToAgent = "yes";
+        UseKeychain = "yes";
+      };
+      "github.com-ath26" = {
+        HostName = "github.com";
+        User = "git";
+        IdentityFile = "~/.ssh/id_personal";
+        IdentitiesOnly = true;
+        AddKeysToAgent = "yes";
+        UseKeychain = "yes";
       };
     };
   };

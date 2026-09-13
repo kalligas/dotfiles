@@ -6,7 +6,7 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 
 - macOS defaults: dark mode, fast key repeat, clean Finder/Dock defaults, tap-to-click.
 - Homebrew casks: WezTerm and Nerd Font fallbacks.
-- Nix user packages: Neovim, Starship, Codex, Claude Code, Herdr, ripgrep, fd, fzf, jq, lazygit, yazi, lsd, vivid, bat, delta, and tree-sitter.
+- Nix user packages: Neovim, Starship, Codex, Claude Code, Herdr, Node.js/npm/npx, ripgrep, fd, fzf, jq, lazygit, yazi, lsd, vivid, bat, delta, and tree-sitter.
 - Terminal/editor style: Cyberdream dark palette, blurred/translucent WezTerm, transparent Neovim, glass-friendly Herdr.
 - CLI theming: Cyberdream Starship, Bat, Delta, LazyGit, Yazi, LSD, and Vivid.
 - Workflow helpers: Treehouse aliases/functions and Herdr aliases.
@@ -116,6 +116,16 @@ After the first setup, edit files in this repo and apply changes with:
 ```sh
 ./rebuild.sh
 ```
+
+## Token Usage Monitor
+
+Node.js, npm, and npx are installed through Home Manager. Start Tokscale with:
+
+```sh
+npx tokscale@latest
+```
+
+Tokscale reads supported local AI-agent session data and opens its interactive usage monitor. Use `npx tokscale@latest --light` for a lightweight terminal report.
 
 ## Validate Without Applying
 
