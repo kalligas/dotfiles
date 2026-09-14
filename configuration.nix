@@ -52,6 +52,7 @@
       "claude"
       "docker-desktop"
       "obsidian"
+      "openvpn-connect"
       "tableplus"
       "visual-studio-code"
       "wezterm"
