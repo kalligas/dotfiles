@@ -158,6 +158,33 @@ actual private key outside this repo; if it has another name on a Mac, create a
 local symlink such as `ln -s id_ed25519 ~/.ssh/id_personal`. The Wikifarmer host
 uses `~/.ssh/id_ed25519_wikifarmer` separately.
 
+## Add a macOS App
+
+Find the Homebrew cask name for the app you want. For example:
+
+```sh
+brew search --cask tableplus
+brew info --cask tableplus
+```
+
+Add that name to the `homebrew.casks` list in `configuration.nix` before
+rebuilding. Use `homebrew.brews` for Homebrew-managed command-line tools;
+most other command-line tools belong in `home.packages` in `home.nix`.
+
+Validate, apply, and push the change:
+
+```sh
+export DOTFILES_USER="$(cat .machine/user)"
+nix flake check --no-build --impure
+./rebuild.sh
+git add configuration.nix
+git commit -m "Add TablePlus Homebrew cask"
+git push origin main
+```
+
+Replace `tableplus` and the commit message with your app's name. The rebuild
+installs declared casks, so a separate `brew install` is unnecessary.
+
 ## Homebrew Cleanup Warning
 
 `configuration.nix` uses:
