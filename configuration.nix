@@ -52,6 +52,7 @@
       "claude"
       "docker-desktop"
       "obsidian"
+      "tableplus"
       "visual-studio-code"
       "wezterm"
       "font-go-mono-nerd-font"
