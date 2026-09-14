@@ -153,6 +153,11 @@ nix build .#darwinConfigurations.mac.system --dry-run --impure
 
 Repositories outside `~/projects/` continue to use the personal default.
 
+The personal GitHub SSH hosts use `~/.ssh/id_personal` on every Mac. Keep the
+actual private key outside this repo; if it has another name on a Mac, create a
+local symlink such as `ln -s id_ed25519 ~/.ssh/id_personal`. The Wikifarmer host
+uses `~/.ssh/id_ed25519_wikifarmer` separately.
+
 ## Homebrew Cleanup Warning
 
 `configuration.nix` uses:

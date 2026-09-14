@@ -99,7 +99,7 @@ in
       "github.com" = {
         HostName = "github.com";
         User = "git";
-        IdentityFile = "~/.ssh/id_ed25519";
+        IdentityFile = "~/.ssh/id_personal";
         IdentitiesOnly = true;
         AddKeysToAgent = "yes";
         UseKeychain = "yes";
@@ -107,14 +107,14 @@ in
       "github.com-kalligas" = {
         HostName = "github.com";
         User = "git";
-        IdentityFile = "~/.ssh/id_ed25519";
+        IdentityFile = "~/.ssh/id_personal";
         AddKeysToAgent = "yes";
         UseKeychain = "yes";
       };
       "github.com-ath26" = {
         HostName = "github.com";
         User = "git";
-        IdentityFile = "~/.ssh/id_ed25519";
+        IdentityFile = "~/.ssh/id_personal";
         IdentitiesOnly = true;
         AddKeysToAgent = "yes";
         UseKeychain = "yes";
