@@ -163,8 +163,8 @@ uses `~/.ssh/id_ed25519_wikifarmer` separately.
 Find the Homebrew cask name for the app you want. For example:
 
 ```sh
-brew search --cask tableplus
-brew info --cask tableplus
+brew search --cask dbeaver-community
+brew info --cask dbeaver-community
 ```
 
 Add that name to the `homebrew.casks` list in `configuration.nix` before
@@ -178,11 +178,11 @@ export DOTFILES_USER="$(cat .machine/user)"
 nix flake check --no-build --impure
 ./rebuild.sh
 git add configuration.nix
-git commit -m "Add TablePlus Homebrew cask"
+git commit -m "Add DBeaver Homebrew cask"
 git push origin main
 ```
 
-Replace `tableplus` and the commit message with your app's name. The rebuild
+Replace `dbeaver-community` and the commit message with your app's name. The rebuild
 installs declared casks, so a separate `brew install` is unnecessary.
 
 ## Homebrew Cleanup Warning

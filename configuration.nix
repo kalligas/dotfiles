@@ -50,10 +50,10 @@
     casks = [
       "chatgpt"
       "claude"
+      "dbeaver-community"
       "docker-desktop"
       "obsidian"
       "openvpn-connect"
-      "tableplus"
       "visual-studio-code"
       "wezterm"
       "font-go-mono-nerd-font"
