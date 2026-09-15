@@ -43,7 +43,10 @@
     onActivation.extraFlags = [ "--force" ];
 
     brews = [
+      "awscli"
       "gh"
+      "kubectl"
+      "libpq"
       "rtk"
     ];
 
