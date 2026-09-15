@@ -3,26 +3,32 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: tokcost [-e] [-from YYYY-MM-DD] [-to YYYY-MM-DD]
+Usage: tokcost [-p] [-e] [-from YYYY-MM-DD] [-to YYYY-MM-DD]
 
-Show Tokscale cost by project and model.
+Show Tokscale cost by model.
 
 Options:
+  -p                  Group by project and model.
   -e                  Output CSV to stdout.
-  -from YYYY-MM-DD    Start date. Defaults to Jan 1 of the current year.
+  -from YYYY-MM-DD    Start date. Defaults to today.
   -to YYYY-MM-DD      End date. Defaults to today.
   -h, --help          Show this help.
 EOF
 }
 
 csv=0
-from="$(date '+%Y')-01-01"
+project_view=0
+from="$(date '+%F')"
 to="$(date '+%F')"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -e)
       csv=1
+      shift
+      ;;
+    -p|--project|--projects)
+      project_view=1
       shift
       ;;
     -from|--from|--since)
@@ -58,9 +64,12 @@ for tool in npx jq awk; do
   }
 done
 
+group_by="model"
+[[ "$project_view" -eq 1 ]] && group_by="workspace,model"
+
 json="$(
   npx tokscale@latest models \
-    --group-by workspace,model \
+    --group-by "$group_by" \
     --since "$from" \
     --until "$to" \
     --json \
@@ -84,11 +93,19 @@ rows_filter='
 '
 
 if [[ "$csv" -eq 1 ]]; then
-  jq -r --arg from "$from" --arg to "$to" '
-    ["from","to","project","model","cost_usd","messages","tokens","client","provider"],
-    ('"$rows_filter"' | [$from, $to, .project, .model, (.cost | tostring), .messages, .tokens, .client, .provider])
-    | @csv
-  ' <<<"$json"
+  if [[ "$project_view" -eq 1 ]]; then
+    jq -r --arg from "$from" --arg to "$to" '
+      ["from","to","project","model","cost_usd","messages","tokens","client","provider"],
+      ('"$rows_filter"' | [$from, $to, .project, .model, (.cost | tostring), .messages, .tokens, .client, .provider])
+      | @csv
+    ' <<<"$json"
+  else
+    jq -r --arg from "$from" --arg to "$to" '
+      ["from","to","model","cost_usd","messages","tokens","client","provider"],
+      ('"$rows_filter"' | [$from, $to, .model, (.cost | tostring), .messages, .tokens, .client, .provider])
+      | @csv
+    ' <<<"$json"
+  fi
   exit 0
 fi
 
@@ -96,19 +113,41 @@ total_raw="$(jq -r '.totalCost // 0' <<<"$json")"
 total="$(printf '$%.2f' "$total_raw")"
 count="$(jq -r '.entries | length' <<<"$json")"
 
-printf 'Tokscale cost by project and model\n'
+if [[ "$project_view" -eq 1 ]]; then
+  printf 'Tokscale cost by project and model\n'
+else
+  printf 'Tokscale cost by model\n'
+fi
 printf 'Range: %s to %s    Total: %s    Rows: %s\n\n' "$from" "$to" "$total" "$count"
 
-jq -r "$rows_filter | [.project, .model, (.cost | tostring), (.messages | tostring), (.tokens | tostring)] | @tsv" <<<"$json" |
-  awk -F '\t' '
-    function trim(s, n) {
-      return length(s) > n ? substr(s, 1, n - 1) "..." : s
-    }
-    BEGIN {
-      printf "%-32s  %-24s  %10s  %8s  %12s\n", "PROJECT", "MODEL", "COST", "MSGS", "TOKENS"
-      printf "%-32s  %-24s  %10s  %8s  %12s\n", "-------", "-----", "----", "----", "------"
-    }
-    {
-      printf "%-32s  %-24s  $%9.2f  %8d  %12d\n", trim($1, 32), trim($2, 24), $3, $4, $5
-    }
-  '
+if [[ "$project_view" -eq 1 ]]; then
+  jq -r "$rows_filter | [.project, .model, (.cost | tostring), (.messages | tostring), (.tokens | tostring)] | @tsv" <<<"$json" |
+    awk -F '\t' '
+      function trim(s, n) {
+        return length(s) > n ? substr(s, 1, n - 1) "..." : s
+      }
+      BEGIN {
+        printf "%-32s  %-24s  %10s  %8s  %12s\n", "PROJECT", "MODEL", "COST", "MSGS", "TOKENS"
+        printf "%-32s  %-24s  %10s  %8s  %12s\n", "-------", "-----", "----", "----", "------"
+      }
+      {
+        cost = sprintf("$%.2f", $3)
+        printf "%-32s  %-24s  %10s  %8d  %12d\n", trim($1, 32), trim($2, 24), cost, $4, $5
+      }
+    '
+else
+  jq -r "$rows_filter | [.model, (.cost | tostring), (.messages | tostring), (.tokens | tostring), .client, .provider] | @tsv" <<<"$json" |
+    awk -F '\t' '
+      function trim(s, n) {
+        return length(s) > n ? substr(s, 1, n - 1) "..." : s
+      }
+      BEGIN {
+        printf "%-28s  %10s  %8s  %12s  %-12s  %-12s\n", "MODEL", "COST", "MSGS", "TOKENS", "CLIENT", "PROVIDER"
+        printf "%-28s  %10s  %8s  %12s  %-12s  %-12s\n", "-----", "----", "----", "------", "------", "--------"
+      }
+      {
+        cost = sprintf("$%.2f", $2)
+        printf "%-28s  %10s  %8d  %12d  %-12s  %-12s\n", trim($1, 28), cost, $3, $4, trim($5, 12), trim($6, 12)
+      }
+    '
+fi

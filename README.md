@@ -127,16 +127,17 @@ npx tokscale@latest
 
 Tokscale reads supported local AI-agent session data and opens its interactive usage monitor. Use `npx tokscale@latest --light` for a lightweight terminal report.
 
-For a terminal cost report grouped by project and model, use:
+For a terminal cost report grouped by model, use:
 
 ```sh
 tokcost
+tokcost -p
 tokcost -from 2026-09-15 -to 2026-09-15
 tokcost -e > tokscale-costs.csv
 ```
 
-`tokcost` defaults to Jan 1 of the current year through today. `-e` writes CSV
-to stdout.
+`tokcost` defaults to today. `-p` groups by project and model. `-e` writes CSV
+to stdout for the active view.
 
 ## Validate Without Applying
 
