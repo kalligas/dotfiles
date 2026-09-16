@@ -139,9 +139,9 @@ tokcost -e > tokscale-costs.csv
 ```
 
 `tokcost` defaults to today. `-p` groups by project and model. `-limit` adds
-Codex 5h and weekly remaining-limit columns. `-c` refreshes every 5 seconds
-until `Ctrl-C`; use `-c 10` for a different interval. `-e` writes CSV to stdout
-for the active view.
+Codex 5h and weekly remaining-limit columns. `-c` appends a ping-style refresh
+every 5 seconds until `Ctrl-C`; use `-c 10` for a different interval. `-e`
+writes CSV to stdout for the active view.
 
 ## Validate Without Applying
 

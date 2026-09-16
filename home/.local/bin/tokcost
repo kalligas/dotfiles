@@ -25,6 +25,7 @@ limits=0
 project_view=0
 from="$(date '+%F')"
 to="$(date '+%F')"
+continuous_rows_started=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -142,8 +143,24 @@ fetch_limits() {
     '
 }
 
+print_stream_header() {
+  if [[ "$project_view" -eq 1 ]]; then
+    if [[ "$limits" -eq 1 ]]; then
+      printf "%-26s  %-22s  %10s  %8s  %12s  %10s  %12s\n" "PROJECT" "MODEL" "COST" "MSGS" "TOKENS" "5H LIMIT" "WEEKLY LIMIT"
+    else
+      printf "%-32s  %-24s  %10s  %8s  %12s\n" "PROJECT" "MODEL" "COST" "MSGS" "TOKENS"
+    fi
+  else
+    if [[ "$limits" -eq 1 ]]; then
+      printf "%-24s  %10s  %8s  %12s  %-10s  %-10s  %10s  %12s\n" "MODEL" "COST" "MSGS" "TOKENS" "CLIENT" "PROVIDER" "5H LIMIT" "WEEKLY LIMIT"
+    else
+      printf "%-28s  %10s  %8s  %12s  %-12s  %-12s\n" "MODEL" "COST" "MSGS" "TOKENS" "CLIENT" "PROVIDER"
+    fi
+  fi
+}
+
 render_once() {
-  local json total_raw total count fiveh weekly fiveh_reset weekly_reset
+  local json total_raw total count fiveh weekly fiveh_reset weekly_reset show_header
 
   json="$(fetch_costs)"
   IFS=$'\t' read -r fiveh weekly fiveh_reset weekly_reset <<<"$(fetch_limits)"
@@ -185,27 +202,43 @@ render_once() {
     return
   fi
 
-  if [[ "$project_view" -eq 1 ]]; then
-    printf 'Tokscale cost by project and model\n'
+  if [[ "$continuous" -eq 1 ]]; then
+    show_header=0
+    if [[ "$continuous_rows_started" -eq 0 ]]; then
+      print_stream_header
+      continuous_rows_started=1
+    fi
+    printf -- '--- %s  range=%s..%s  total=%s  rows=%s' "$(date '+%Y-%m-%d %H:%M:%S')" "$from" "$to" "$total" "$count"
+    if [[ "$limits" -eq 1 ]]; then
+      printf '  5h=%s  weekly=%s' "$fiveh" "$weekly"
+    fi
+    printf ' ---\n'
   else
-    printf 'Tokscale cost by model\n'
+    show_header=1
+    if [[ "$project_view" -eq 1 ]]; then
+      printf 'Tokscale cost by project and model\n'
+    else
+      printf 'Tokscale cost by model\n'
+    fi
+    printf 'Range: %s to %s    Total: %s    Rows: %s\n' "$from" "$to" "$total" "$count"
+    if [[ "$limits" -eq 1 ]]; then
+      printf 'Codex limits: 5h %s remaining, weekly %s remaining\n' "$fiveh" "$weekly"
+    fi
+    printf '\n'
   fi
-  printf 'Range: %s to %s    Total: %s    Rows: %s\n' "$from" "$to" "$total" "$count"
-  if [[ "$limits" -eq 1 ]]; then
-    printf 'Codex limits: 5h %s remaining, weekly %s remaining\n' "$fiveh" "$weekly"
-  fi
-  printf '\n'
 
   if [[ "$project_view" -eq 1 ]]; then
     if [[ "$limits" -eq 1 ]]; then
       jq -r "$rows_filter | [.project, .model, (.cost | tostring), (.messages | tostring), (.tokens | tostring)] | @tsv" <<<"$json" |
-        awk -F '\t' -v fiveh="$fiveh" -v weekly="$weekly" '
+        awk -F '\t' -v fiveh="$fiveh" -v weekly="$weekly" -v show_header="$show_header" '
           function trim(s, n) {
             return length(s) > n ? substr(s, 1, n - 1) "..." : s
           }
           BEGIN {
-            printf "%-26s  %-22s  %10s  %8s  %12s  %10s  %12s\n", "PROJECT", "MODEL", "COST", "MSGS", "TOKENS", "5H LIMIT", "WEEKLY LIMIT"
-            printf "%-26s  %-22s  %10s  %8s  %12s  %10s  %12s\n", "-------", "-----", "----", "----", "------", "--------", "------------"
+            if (show_header == 1) {
+              printf "%-26s  %-22s  %10s  %8s  %12s  %10s  %12s\n", "PROJECT", "MODEL", "COST", "MSGS", "TOKENS", "5H LIMIT", "WEEKLY LIMIT"
+              printf "%-26s  %-22s  %10s  %8s  %12s  %10s  %12s\n", "-------", "-----", "----", "----", "------", "--------", "------------"
+            }
           }
           {
             cost = sprintf("$%.2f", $3)
@@ -214,13 +247,15 @@ render_once() {
         '
     else
       jq -r "$rows_filter | [.project, .model, (.cost | tostring), (.messages | tostring), (.tokens | tostring)] | @tsv" <<<"$json" |
-        awk -F '\t' '
+        awk -F '\t' -v show_header="$show_header" '
       function trim(s, n) {
         return length(s) > n ? substr(s, 1, n - 1) "..." : s
       }
       BEGIN {
-        printf "%-32s  %-24s  %10s  %8s  %12s\n", "PROJECT", "MODEL", "COST", "MSGS", "TOKENS"
-        printf "%-32s  %-24s  %10s  %8s  %12s\n", "-------", "-----", "----", "----", "------"
+        if (show_header == 1) {
+          printf "%-32s  %-24s  %10s  %8s  %12s\n", "PROJECT", "MODEL", "COST", "MSGS", "TOKENS"
+          printf "%-32s  %-24s  %10s  %8s  %12s\n", "-------", "-----", "----", "----", "------"
+        }
       }
       {
         cost = sprintf("$%.2f", $3)
@@ -231,13 +266,15 @@ render_once() {
   else
     if [[ "$limits" -eq 1 ]]; then
       jq -r "$rows_filter | [.model, (.cost | tostring), (.messages | tostring), (.tokens | tostring), .client, .provider] | @tsv" <<<"$json" |
-        awk -F '\t' -v fiveh="$fiveh" -v weekly="$weekly" '
+        awk -F '\t' -v fiveh="$fiveh" -v weekly="$weekly" -v show_header="$show_header" '
           function trim(s, n) {
             return length(s) > n ? substr(s, 1, n - 1) "..." : s
           }
           BEGIN {
-            printf "%-24s  %10s  %8s  %12s  %-10s  %-10s  %10s  %12s\n", "MODEL", "COST", "MSGS", "TOKENS", "CLIENT", "PROVIDER", "5H LIMIT", "WEEKLY LIMIT"
-            printf "%-24s  %10s  %8s  %12s  %-10s  %-10s  %10s  %12s\n", "-----", "----", "----", "------", "------", "--------", "--------", "------------"
+            if (show_header == 1) {
+              printf "%-24s  %10s  %8s  %12s  %-10s  %-10s  %10s  %12s\n", "MODEL", "COST", "MSGS", "TOKENS", "CLIENT", "PROVIDER", "5H LIMIT", "WEEKLY LIMIT"
+              printf "%-24s  %10s  %8s  %12s  %-10s  %-10s  %10s  %12s\n", "-----", "----", "----", "------", "------", "--------", "--------", "------------"
+            }
           }
           {
             cost = sprintf("$%.2f", $2)
@@ -246,13 +283,15 @@ render_once() {
         '
     else
       jq -r "$rows_filter | [.model, (.cost | tostring), (.messages | tostring), (.tokens | tostring), .client, .provider] | @tsv" <<<"$json" |
-        awk -F '\t' '
+        awk -F '\t' -v show_header="$show_header" '
       function trim(s, n) {
         return length(s) > n ? substr(s, 1, n - 1) "..." : s
       }
       BEGIN {
-        printf "%-28s  %10s  %8s  %12s  %-12s  %-12s\n", "MODEL", "COST", "MSGS", "TOKENS", "CLIENT", "PROVIDER"
-        printf "%-28s  %10s  %8s  %12s  %-12s  %-12s\n", "-----", "----", "----", "------", "------", "--------"
+        if (show_header == 1) {
+          printf "%-28s  %10s  %8s  %12s  %-12s  %-12s\n", "MODEL", "COST", "MSGS", "TOKENS", "CLIENT", "PROVIDER"
+          printf "%-28s  %10s  %8s  %12s  %-12s  %-12s\n", "-----", "----", "----", "------", "------", "--------"
+        }
       }
       {
         cost = sprintf("$%.2f", $2)
@@ -265,13 +304,7 @@ render_once() {
 
 if [[ "$continuous" -eq 1 ]]; then
   while true; do
-    if [[ -t 1 && -n "${TERM:-}" ]]; then
-      clear
-    else
-      printf '\n'
-    fi
     render_once
-    printf '\nUpdated: %s    Refresh: %ss    Ctrl-C to stop\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$interval"
     sleep "$interval"
   done
 fi
