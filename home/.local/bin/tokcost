@@ -3,13 +3,13 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: tokcost [-p] [-limit] [-c] [-e] [-from YYYY-MM-DD] [-to YYYY-MM-DD]
+Usage: tokcost [-p] [-u] [-c] [-e] [-from YYYY-MM-DD] [-to YYYY-MM-DD]
 
 Show Tokscale cost by model.
 
 Options:
   -p                  Group by project and model.
-  -limit              Add Codex 5h and weekly remaining-limit columns.
+  -u, --usage         Add Codex 5h and weekly usage columns.
   -c [SECONDS]        Continuously refresh until Ctrl-C. Defaults to 5 seconds.
   -e                  Output CSV to stdout.
   -from YYYY-MM-DD    Start date. Defaults to today.
@@ -21,7 +21,7 @@ EOF
 csv=0
 continuous=0
 interval=5
-limits=0
+include_usage=0
 project_view=0
 from="$(date '+%F')"
 to="$(date '+%F')"
@@ -33,8 +33,8 @@ while [[ $# -gt 0 ]]; do
       csv=1
       shift
       ;;
-    -limit|--limit|--limits)
-      limits=1
+    -u|--usage)
+      include_usage=1
       shift
       ;;
     -c|--continuous)
@@ -113,8 +113,8 @@ fetch_costs() {
     --no-spinner
 }
 
-fetch_limits() {
-  if [[ "$limits" -ne 1 ]]; then
+fetch_usage() {
+  if [[ "$include_usage" -ne 1 ]]; then
     printf '\t\t\t\n'
     return
   fi
@@ -145,14 +145,14 @@ fetch_limits() {
 
 print_stream_header() {
   if [[ "$project_view" -eq 1 ]]; then
-    if [[ "$limits" -eq 1 ]]; then
-      printf "%-26s  %-22s  %10s  %8s  %12s  %10s  %12s\n" "PROJECT" "MODEL" "COST" "MSGS" "TOKENS" "5H LIMIT" "WEEKLY LIMIT"
+    if [[ "$include_usage" -eq 1 ]]; then
+      printf "%-26s  %-22s  %10s  %8s  %12s  %10s  %12s\n" "PROJECT" "MODEL" "COST" "MSGS" "TOKENS" "5H USAGE" "WEEKLY USAGE"
     else
       printf "%-32s  %-24s  %10s  %8s  %12s\n" "PROJECT" "MODEL" "COST" "MSGS" "TOKENS"
     fi
   else
-    if [[ "$limits" -eq 1 ]]; then
-      printf "%-24s  %10s  %8s  %12s  %-10s  %-10s  %10s  %12s\n" "MODEL" "COST" "MSGS" "TOKENS" "CLIENT" "PROVIDER" "5H LIMIT" "WEEKLY LIMIT"
+    if [[ "$include_usage" -eq 1 ]]; then
+      printf "%-24s  %10s  %8s  %12s  %-10s  %-10s  %10s  %12s\n" "MODEL" "COST" "MSGS" "TOKENS" "CLIENT" "PROVIDER" "5H USAGE" "WEEKLY USAGE"
     else
       printf "%-28s  %10s  %8s  %12s  %-12s  %-12s\n" "MODEL" "COST" "MSGS" "TOKENS" "CLIENT" "PROVIDER"
     fi
@@ -163,7 +163,7 @@ render_once() {
   local json total_raw total count fiveh weekly fiveh_reset weekly_reset show_header
 
   json="$(fetch_costs)"
-  IFS=$'\t' read -r fiveh weekly fiveh_reset weekly_reset <<<"$(fetch_limits)"
+  IFS=$'\t' read -r fiveh weekly fiveh_reset weekly_reset <<<"$(fetch_usage)"
 
   total_raw="$(jq -r '.totalCost // 0' <<<"$json")"
   total="$(printf '$%.2f' "$total_raw")"
@@ -171,9 +171,9 @@ render_once() {
 
   if [[ "$csv" -eq 1 ]]; then
     if [[ "$project_view" -eq 1 ]]; then
-      if [[ "$limits" -eq 1 ]]; then
+      if [[ "$include_usage" -eq 1 ]]; then
         jq -r --arg from "$from" --arg to "$to" --arg fiveh "$fiveh" --arg weekly "$weekly" --arg fiveh_reset "$fiveh_reset" --arg weekly_reset "$weekly_reset" '
-          ["from","to","project","model","cost_usd","messages","tokens","client","provider","5h_limit","weekly_limit","5h_resets_at","weekly_resets_at"],
+          ["from","to","project","model","cost_usd","messages","tokens","client","provider","5h_usage","weekly_usage","5h_resets_at","weekly_resets_at"],
           ('"$rows_filter"' | [$from, $to, .project, .model, (.cost | tostring), .messages, .tokens, .client, .provider, $fiveh, $weekly, $fiveh_reset, $weekly_reset])
           | @csv
         ' <<<"$json"
@@ -185,9 +185,9 @@ render_once() {
         ' <<<"$json"
       fi
     else
-      if [[ "$limits" -eq 1 ]]; then
+      if [[ "$include_usage" -eq 1 ]]; then
         jq -r --arg from "$from" --arg to "$to" --arg fiveh "$fiveh" --arg weekly "$weekly" --arg fiveh_reset "$fiveh_reset" --arg weekly_reset "$weekly_reset" '
-          ["from","to","model","cost_usd","messages","tokens","client","provider","5h_limit","weekly_limit","5h_resets_at","weekly_resets_at"],
+          ["from","to","model","cost_usd","messages","tokens","client","provider","5h_usage","weekly_usage","5h_resets_at","weekly_resets_at"],
           ('"$rows_filter"' | [$from, $to, .model, (.cost | tostring), .messages, .tokens, .client, .provider, $fiveh, $weekly, $fiveh_reset, $weekly_reset])
           | @csv
         ' <<<"$json"
@@ -209,7 +209,7 @@ render_once() {
       continuous_rows_started=1
     fi
     printf -- '--- %s  range=%s..%s  total=%s  rows=%s' "$(date '+%Y-%m-%d %H:%M:%S')" "$from" "$to" "$total" "$count"
-    if [[ "$limits" -eq 1 ]]; then
+    if [[ "$include_usage" -eq 1 ]]; then
       printf '  5h=%s  weekly=%s' "$fiveh" "$weekly"
     fi
     printf ' ---\n'
@@ -221,14 +221,14 @@ render_once() {
       printf 'Tokscale cost by model\n'
     fi
     printf 'Range: %s to %s    Total: %s    Rows: %s\n' "$from" "$to" "$total" "$count"
-    if [[ "$limits" -eq 1 ]]; then
-      printf 'Codex limits: 5h %s remaining, weekly %s remaining\n' "$fiveh" "$weekly"
+    if [[ "$include_usage" -eq 1 ]]; then
+      printf 'Codex usage: 5h %s remaining, weekly %s remaining\n' "$fiveh" "$weekly"
     fi
     printf '\n'
   fi
 
   if [[ "$project_view" -eq 1 ]]; then
-    if [[ "$limits" -eq 1 ]]; then
+    if [[ "$include_usage" -eq 1 ]]; then
       jq -r "$rows_filter | [.project, .model, (.cost | tostring), (.messages | tostring), (.tokens | tostring)] | @tsv" <<<"$json" |
         awk -F '\t' -v fiveh="$fiveh" -v weekly="$weekly" -v show_header="$show_header" '
           function trim(s, n) {
@@ -236,7 +236,7 @@ render_once() {
           }
           BEGIN {
             if (show_header == 1) {
-              printf "%-26s  %-22s  %10s  %8s  %12s  %10s  %12s\n", "PROJECT", "MODEL", "COST", "MSGS", "TOKENS", "5H LIMIT", "WEEKLY LIMIT"
+              printf "%-26s  %-22s  %10s  %8s  %12s  %10s  %12s\n", "PROJECT", "MODEL", "COST", "MSGS", "TOKENS", "5H USAGE", "WEEKLY USAGE"
               printf "%-26s  %-22s  %10s  %8s  %12s  %10s  %12s\n", "-------", "-----", "----", "----", "------", "--------", "------------"
             }
           }
@@ -264,7 +264,7 @@ render_once() {
     '
     fi
   else
-    if [[ "$limits" -eq 1 ]]; then
+    if [[ "$include_usage" -eq 1 ]]; then
       jq -r "$rows_filter | [.model, (.cost | tostring), (.messages | tostring), (.tokens | tostring), .client, .provider] | @tsv" <<<"$json" |
         awk -F '\t' -v fiveh="$fiveh" -v weekly="$weekly" -v show_header="$show_header" '
           function trim(s, n) {
@@ -272,7 +272,7 @@ render_once() {
           }
           BEGIN {
             if (show_header == 1) {
-              printf "%-24s  %10s  %8s  %12s  %-10s  %-10s  %10s  %12s\n", "MODEL", "COST", "MSGS", "TOKENS", "CLIENT", "PROVIDER", "5H LIMIT", "WEEKLY LIMIT"
+              printf "%-24s  %10s  %8s  %12s  %-10s  %-10s  %10s  %12s\n", "MODEL", "COST", "MSGS", "TOKENS", "CLIENT", "PROVIDER", "5H USAGE", "WEEKLY USAGE"
               printf "%-24s  %10s  %8s  %12s  %-10s  %-10s  %10s  %12s\n", "-----", "----", "----", "------", "------", "--------", "--------", "------------"
             }
           }

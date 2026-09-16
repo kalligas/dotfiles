@@ -132,14 +132,14 @@ For a terminal cost report grouped by model, use:
 ```sh
 tokcost
 tokcost -p
-tokcost -limit
+tokcost -u
 tokcost -c
 tokcost -from 2026-09-15 -to 2026-09-15
 tokcost -e > tokscale-costs.csv
 ```
 
-`tokcost` defaults to today. `-p` groups by project and model. `-limit` adds
-Codex 5h and weekly remaining-limit columns. `-c` appends a ping-style refresh
+`tokcost` defaults to today. `-p` groups by project and model. `-u` adds
+Codex 5h and weekly usage columns. `-c` appends a ping-style refresh
 every 5 seconds until `Ctrl-C`; use `-c 10` for a different interval. `-e`
 writes CSV to stdout for the active view.
 
