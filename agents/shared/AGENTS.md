@@ -71,3 +71,17 @@ This file is the single source of truth for both tools:
 - Codex reads it as `~/.codex/AGENTS.md`.
 - Claude Code reads it as `~/.claude/CLAUDE.md`.
 Both are symlinks back to this file — edit here, not at the symlink target.
+
+## Documentation writing style
+
+When writing documentation such as data contracts, design documents, or
+definitions:
+
+- Use plain English or define every specialized term before using it.
+- Make every sentence stand alone. Name the subject instead of using a
+  pronoun that points to an earlier sentence.
+- State what a thing is. Do not define a thing by describing what it is not.
+- Remove filler. Keep only claims or phrases that a reader could check.
+- When a rule has a reason, state the reason.
+- Use a concrete example when an example makes a definition clearer.
+- Make each paragraph understandable to a reader with no prior context.
