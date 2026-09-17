@@ -13,6 +13,8 @@ agents/
 ├── shared/
 │   ├── AGENTS.md            # THE global instruction file, for both tools
 │   └── skills/               # skills usable by both tools, one dir each
+├── ../.claude-plugin/       # Claude Chat marketplace manifest (repo root)
+├── ../claude/plugins/       # Claude Chat plugin manifest and skill link
 ├── claude/
 │   ├── settings.json         # -> ~/.claude/settings.json
 │   ├── rules/                 # -> ~/.claude/rules (Claude-only, path-scoped)
@@ -66,6 +68,17 @@ Re-running is safe — it's idempotent. Anything it would replace is moved to
 it linked, copied, backed up, and skipped.
 
 Add `--copy-claude-md` if you use Cowork for coding work (see below).
+
+## Claude Chat marketplace
+
+The repository root is also a Claude Chat marketplace. Its `my-skills` plugin
+manifest is under `claude/plugins/my-skills/`, and that plugin's `skills/`
+directory is a symlink to `shared/skills/`. This keeps Claude Chat, Claude
+Code, and Codex on the same skill source of truth.
+
+From Claude Chat, use **Customize → Plugins → Add Marketplace → Add from a
+Repository** and select this repository. To validate the marketplace locally,
+run `claude plugin validate .` from the repository root.
 
 ## Adding a new shared skill
 

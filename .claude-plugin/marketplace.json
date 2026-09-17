@@ -1,0 +1,14 @@
+{
+  "name": "dotfiles-skills",
+  "description": "Personal skills for Claude Chat",
+  "owner": {
+    "name": "wikifarmer"
+  },
+  "plugins": [
+    {
+      "name": "my-skills",
+      "source": "./claude/plugins/my-skills",
+      "description": "Personal skills shared with Claude"
+    }
+  ]
+}
