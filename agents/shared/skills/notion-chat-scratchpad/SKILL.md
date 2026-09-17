@@ -25,9 +25,13 @@ Notion Scratchpad.
 5. Keep the entry practical:
    - `Key Takeaways`: concise bullets for decisions, findings, and reusable
      context.
-   - `Action Items`: checkbox-style tasks with owner or timing only when the
-     chat actually provides them.
-   - `Open Questions`: include only unresolved questions that matter.
+   - `Action Items`: include only critical, concrete actions that the user has
+     explicitly committed to, clearly requested, or that are necessary to
+     complete an agreed objective. Do not turn recommendations, optional
+     suggestions, possible next steps, or assistant-proposed actions into tasks.
+     When uncertain whether something is a real commitment, keep it out of
+     `Action Items`. Add owner or timing only when the chat actually provides them.
+   - `Open Questions`: include only unresolved questions that materially affect a decision or agreed objective.
 6. Do not include credentials, tokens, private keys, or secrets. If the chat
    contains sensitive operational details, summarize them at a safe level.
 7. Do not invent outcomes, deadlines, owners, links, or Notion structure. If
