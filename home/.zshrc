@@ -21,6 +21,13 @@ if [[ -s "$NVM_DIR/nvm.sh" ]]; then
   . "$NVM_DIR/nvm.sh"
 fi
 
+# Long-lived Claude Code token from `claude setup-token`, kept in the macOS
+# Keychain so the token never lands in this repo.
+if command -v security >/dev/null 2>&1; then
+  export CLAUDE_CODE_OAUTH_TOKEN="$(security find-generic-password -s claude-code-oauth-token -w 2>/dev/null)"
+  [[ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]] && unset CLAUDE_CODE_OAUTH_TOKEN
+fi
+
 if command -v vivid >/dev/null 2>&1; then
   export LS_COLORS="$(vivid generate cyberdream)"
 fi

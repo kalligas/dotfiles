@@ -6,7 +6,8 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 
 - macOS defaults: dark mode, fast key repeat, clean Finder/Dock defaults, tap-to-click.
 - Homebrew casks: WezTerm and Nerd Font fallbacks.
-- Nix user packages: Neovim, Starship, Codex, Claude Code, Herdr, Node.js/npm/npx, ripgrep, fd, fzf, jq, lazygit, yazi, lsd, vivid, bat, delta, and tree-sitter.
+- Claude Code: installed with the official native installer into `~/.local/bin`, not Nix. The native install updates itself, and a second Nix copy would share the same Keychain login, which can cause repeated logouts.
+- Nix user packages: Neovim, Starship, Codex, Herdr, Node.js/npm/npx, ripgrep, fd, fzf, jq, lazygit, yazi, lsd, vivid, bat, delta, and tree-sitter.
 - Terminal/editor style: Cyberdream dark palette, blurred/translucent WezTerm, transparent Neovim, glass-friendly Herdr.
 - CLI theming: Cyberdream Starship, Bat, Delta, LazyGit, Yazi, LSD, and Vivid.
 - Workflow helpers: Treehouse aliases/functions and Herdr aliases.

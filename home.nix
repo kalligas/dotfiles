@@ -24,7 +24,6 @@ in
 
   home.packages = (with pkgs; [
     bat
-    claude-code
     delta
     fd
     fzf
