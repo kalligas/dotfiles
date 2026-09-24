@@ -9,7 +9,8 @@ Show Tokscale cost by model.
 
 Options:
   -p                  Group by project and model.
-  -u, --usage         Add Codex 5h and weekly usage columns.
+  -u, --usage         Add 5h and weekly usage columns. Claude rows show Claude
+                      limits, Codex rows show Codex limits, other rows show n/a.
   -c [SECONDS]        Continuously refresh until Ctrl-C. Defaults to 5 seconds.
   -e                  Output CSV to stdout.
   -from YYYY-MM-DD    Start date. Defaults to today.
@@ -100,8 +101,21 @@ rows_filter='
       messages: (.messageCount // 0),
       tokens: ((.input // 0) + (.output // 0) + (.cacheRead // 0) + (.cacheWrite // 0) + (.reasoning // 0)),
       client: (.mergedClients // .client // ""),
-      provider: (.provider // "")
+      provider: (.provider // ""),
+      usage_key: (
+        ((.mergedClients // .client // "") | tostring | ascii_downcase) as $c
+        | if ($c | contains("claude")) then "claude"
+          elif ($c | contains("codex")) then "codex"
+          else ""
+          end
+      )
     }
+'
+
+# Appended after rows_filter when -u is set. Each row picks up the limits of
+# its own client from the $usage object that fetch_usage builds.
+usage_join='
+  | . + ($usage[.usage_key] // {fiveh: "n/a", weekly: "n/a", fiveh_reset: "", weekly_reset: ""})
 '
 
 fetch_costs() {
@@ -115,15 +129,16 @@ fetch_costs() {
 
 fetch_usage() {
   if [[ "$include_usage" -ne 1 ]]; then
-    printf '\t\t\t\n'
+    echo '{}'
     return
   fi
 
+  # Tokscale labels the Claude 5-hour window "Session" and the Codex one "5h".
   npx tokscale@latest usage --json |
-    jq -r '
-      def metric($name):
+    jq -c '
+      def metric($provider; $name):
         [.[]
-          | select((.provider // "" | ascii_downcase) == "codex")
+          | select((.provider // "" | ascii_downcase) == $provider)
           | .metrics[]
           | select((.label // "" | ascii_downcase) == $name)][0];
       def pct($m):
@@ -136,10 +151,11 @@ fetch_usage() {
         then ""
         else $m.resets_at
         end;
-      (metric("5h")) as $five
-      | (metric("weekly")) as $weekly
-      | [pct($five), pct($weekly), reset($five), reset($weekly)]
-      | @tsv
+      def limits($provider; $five_label):
+        metric($provider; $five_label) as $five
+        | metric($provider; "weekly") as $weekly
+        | {fiveh: pct($five), weekly: pct($weekly), fiveh_reset: reset($five), weekly_reset: reset($weekly)};
+      {claude: limits("claude"; "session"), codex: limits("codex"; "5h")}
     '
 }
 
@@ -160,10 +176,14 @@ print_stream_header() {
 }
 
 render_once() {
-  local json total_raw total count fiveh weekly fiveh_reset weekly_reset show_header
+  local json usage_json total_raw total count show_header
+  local claude_fiveh claude_weekly codex_fiveh codex_weekly
 
   json="$(fetch_costs)"
-  IFS=$'\t' read -r fiveh weekly fiveh_reset weekly_reset <<<"$(fetch_usage)"
+  usage_json="$(fetch_usage)"
+  IFS=$'\t' read -r claude_fiveh claude_weekly codex_fiveh codex_weekly <<<"$(
+    jq -r '[.claude.fiveh, .claude.weekly, .codex.fiveh, .codex.weekly] | map(. // "n/a") | @tsv' <<<"$usage_json"
+  )"
 
   total_raw="$(jq -r '.totalCost // 0' <<<"$json")"
   total="$(printf '$%.2f' "$total_raw")"
@@ -172,9 +192,9 @@ render_once() {
   if [[ "$csv" -eq 1 ]]; then
     if [[ "$project_view" -eq 1 ]]; then
       if [[ "$include_usage" -eq 1 ]]; then
-        jq -r --arg from "$from" --arg to "$to" --arg fiveh "$fiveh" --arg weekly "$weekly" --arg fiveh_reset "$fiveh_reset" --arg weekly_reset "$weekly_reset" '
+        jq -r --arg from "$from" --arg to "$to" --argjson usage "$usage_json" '
           ["from","to","project","model","cost_usd","messages","tokens","client","provider","5h_usage","weekly_usage","5h_resets_at","weekly_resets_at"],
-          ('"$rows_filter"' | [$from, $to, .project, .model, (.cost | tostring), .messages, .tokens, .client, .provider, $fiveh, $weekly, $fiveh_reset, $weekly_reset])
+          ('"$rows_filter$usage_join"' | [$from, $to, .project, .model, (.cost | tostring), .messages, .tokens, .client, .provider, .fiveh, .weekly, .fiveh_reset, .weekly_reset])
           | @csv
         ' <<<"$json"
       else
@@ -186,9 +206,9 @@ render_once() {
       fi
     else
       if [[ "$include_usage" -eq 1 ]]; then
-        jq -r --arg from "$from" --arg to "$to" --arg fiveh "$fiveh" --arg weekly "$weekly" --arg fiveh_reset "$fiveh_reset" --arg weekly_reset "$weekly_reset" '
+        jq -r --arg from "$from" --arg to "$to" --argjson usage "$usage_json" '
           ["from","to","model","cost_usd","messages","tokens","client","provider","5h_usage","weekly_usage","5h_resets_at","weekly_resets_at"],
-          ('"$rows_filter"' | [$from, $to, .model, (.cost | tostring), .messages, .tokens, .client, .provider, $fiveh, $weekly, $fiveh_reset, $weekly_reset])
+          ('"$rows_filter$usage_join"' | [$from, $to, .model, (.cost | tostring), .messages, .tokens, .client, .provider, .fiveh, .weekly, .fiveh_reset, .weekly_reset])
           | @csv
         ' <<<"$json"
       else
@@ -210,7 +230,7 @@ render_once() {
     fi
     printf -- '--- %s  range=%s..%s  total=%s  rows=%s' "$(date '+%Y-%m-%d %H:%M:%S')" "$from" "$to" "$total" "$count"
     if [[ "$include_usage" -eq 1 ]]; then
-      printf '  5h=%s  weekly=%s' "$fiveh" "$weekly"
+      printf '  claude 5h=%s weekly=%s  codex 5h=%s weekly=%s' "$claude_fiveh" "$claude_weekly" "$codex_fiveh" "$codex_weekly"
     fi
     printf ' ---\n'
   else
@@ -222,15 +242,16 @@ render_once() {
     fi
     printf 'Range: %s to %s    Total: %s    Rows: %s\n' "$from" "$to" "$total" "$count"
     if [[ "$include_usage" -eq 1 ]]; then
-      printf 'Codex usage: 5h %s remaining, weekly %s remaining\n' "$fiveh" "$weekly"
+      printf 'Claude usage: 5h %s remaining, weekly %s remaining\n' "$claude_fiveh" "$claude_weekly"
+      printf 'Codex usage:  5h %s remaining, weekly %s remaining\n' "$codex_fiveh" "$codex_weekly"
     fi
     printf '\n'
   fi
 
   if [[ "$project_view" -eq 1 ]]; then
     if [[ "$include_usage" -eq 1 ]]; then
-      jq -r "$rows_filter | [.project, .model, (.cost | tostring), (.messages | tostring), (.tokens | tostring)] | @tsv" <<<"$json" |
-        awk -F '\t' -v fiveh="$fiveh" -v weekly="$weekly" -v show_header="$show_header" '
+      jq -r --argjson usage "$usage_json" "$rows_filter$usage_join | [.project, .model, (.cost | tostring), (.messages | tostring), (.tokens | tostring), .fiveh, .weekly] | @tsv" <<<"$json" |
+        awk -F '\t' -v show_header="$show_header" '
           function trim(s, n) {
             return length(s) > n ? substr(s, 1, n - 1) "..." : s
           }
@@ -242,7 +263,7 @@ render_once() {
           }
           {
             cost = sprintf("$%.2f", $3)
-            printf "%-26s  %-22s  %10s  %8d  %12d  %10s  %12s\n", trim($1, 26), trim($2, 22), cost, $4, $5, fiveh, weekly
+            printf "%-26s  %-22s  %10s  %8d  %12d  %10s  %12s\n", trim($1, 26), trim($2, 22), cost, $4, $5, $6, $7
           }
         '
     else
@@ -265,8 +286,8 @@ render_once() {
     fi
   else
     if [[ "$include_usage" -eq 1 ]]; then
-      jq -r "$rows_filter | [.model, (.cost | tostring), (.messages | tostring), (.tokens | tostring), .client, .provider] | @tsv" <<<"$json" |
-        awk -F '\t' -v fiveh="$fiveh" -v weekly="$weekly" -v show_header="$show_header" '
+      jq -r --argjson usage "$usage_json" "$rows_filter$usage_join | [.model, (.cost | tostring), (.messages | tostring), (.tokens | tostring), .client, .provider, .fiveh, .weekly] | @tsv" <<<"$json" |
+        awk -F '\t' -v show_header="$show_header" '
           function trim(s, n) {
             return length(s) > n ? substr(s, 1, n - 1) "..." : s
           }
@@ -278,7 +299,7 @@ render_once() {
           }
           {
             cost = sprintf("$%.2f", $2)
-            printf "%-24s  %10s  %8d  %12d  %-10s  %-10s  %10s  %12s\n", trim($1, 24), cost, $3, $4, trim($5, 10), trim($6, 10), fiveh, weekly
+            printf "%-24s  %10s  %8d  %12d  %-10s  %-10s  %10s  %12s\n", trim($1, 24), cost, $3, $4, trim($5, 10), trim($6, 10), $7, $8
           }
         '
     else

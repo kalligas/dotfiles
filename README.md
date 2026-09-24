@@ -140,7 +140,9 @@ tokcost -e > tokscale-costs.csv
 ```
 
 `tokcost` defaults to today. `-p` groups by project and model. `-u` adds
-Codex 5h and weekly usage columns. `-c` appends a ping-style refresh
+5h and weekly usage columns: Claude rows show Claude limits, Codex rows show
+Codex limits, and a row shows `n/a` when Tokscale could not fetch that
+client's limits (for example when Claude rate-limits the usage check). `-c` appends a ping-style refresh
 every 5 seconds until `Ctrl-C`; use `-c 10` for a different interval. `-e`
 writes CSV to stdout for the active view.
 
