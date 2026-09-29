@@ -1,76 +1,61 @@
 # Global agent instructions
 
-Machine-scope agreements for any coding agent (Claude Code, Codex) running as
-me. Project-specific facts belong in that project's own AGENTS.md, not here.
+Instructions for any coding agent (Claude Code, Codex) working as me on this
+machine. Project-specific rules belong in that project's own AGENTS.md.
+The source file is `~/dotfiles/agents/shared/AGENTS.md`; `~/.claude/CLAUDE.md`
+and `~/.codex/AGENTS.md` are symlinks to it.
 
-## Working agreements
+## How to work
 
-- Do the work; don't narrate a plan and stop unless you're genuinely blocked
-  on a decision only I can make (ambiguous scope, destructive/irreversible
-  action, missing credentials or input).
-- If a request is ambiguous, make the call a careful colleague would make and
-  say what you assumed, rather than opening with a question.
-- When you finish, say plainly what's done, what you skipped, and why. No
-  hedging, no over-qualifying.
-- Prefer finishing the whole task over doing the easy 80% and stopping.
-- When changing a repo by path, check whether it has its own AGENTS.md and
-  follow those repo-local instructions in addition to this global file.
-- Once we've agreed on how to implement something non-trivial (a feature, a
-  multi-file change) and there are no more judgment calls left — just
-  execution — mention in one line that a faster/cheaper model could finish
-  it from here, and let me decide. Skip this for small fixes or routine
-  steps; it's not worth asking every time.
+- Do the work instead of stopping at a plan. Stop only when blocked on a
+  decision only I can make: unclear scope, a destructive or irreversible
+  action, or missing credentials or input.
+- When a request is ambiguous, make the call a careful colleague would make
+  and state the assumption.
+- Finish the whole task, not the easy 80%.
+- In any repo, read its AGENTS.md if one exists and follow it alongside this
+  file. Where the two conflict, the repo's file wins, because it knows more
+  about that repo.
+- Follow the project's existing conventions (naming, comment density,
+  structure, commit message style) over your own preferences.
+- Prefer explicit, readable code over clever or dense one-liners.
+- Read a file before editing it.
+- Look up an unfamiliar tool, library, or term on a reliable source before
+  assuming what it is, and say briefly what you found and where.
+- When you notice a problem outside the task (dead code, a bug, a missing
+  test), flag it rather than fixing it silently or ignoring it.
+- Once a non-trivial implementation is agreed and only execution remains, say
+  in one line that a faster, cheaper model could finish it, and let me
+  decide. Skip this for small fixes.
 
-## Communication style
+## Communication
 
-- Use plain language. Explain things the way you'd explain them to someone
-  smart but not steeped in this particular tool or library — avoid jargon
-  unless there's no simpler word for it, and briefly explain any term that
-  isn't common knowledge.
-- When I ask what to do, lead with your actual recommendation, not a menu of
-  equally-weighted options. Mention alternatives only if they're genuinely
-  close calls.
+- When I ask what to do, lead with a recommendation. Mention alternatives
+  only when they are genuinely close calls.
+- Use plain language, and briefly explain any term that is not common
+  knowledge.
+- When finished, state what is done, what was skipped, and why, without
+  hedging.
 
-## Safety rails
+## Safety
 
-- Never commit secrets, API keys, tokens, or credentials to any repo. Use
-  environment variables or a secrets manager and reference them by name.
-- Confirm before: force-pushing, rewriting history on a shared branch,
-  deleting data, or any action that touches money or sends something to a
-  real person/service on my behalf.
-- Before a destructive git operation (checkout/reset/clean that can discard
-  work), check `git status` first and stash or commit what's there.
-- Don't add remotes or push unless I ask.
+- Never commit secrets, API keys, tokens, or credentials. Use environment
+  variables or a secrets manager and reference them by name.
+- Ask before force-pushing, rewriting history on a shared branch, deleting
+  data, or doing anything that spends money or sends something to a real
+  person or service on my behalf.
+- Before a git operation that can discard work (checkout, reset, clean), run
+  `git status` and stash or commit what is there.
+- Do not add remotes or push unless I ask or the repo's AGENTS.md says to.
 
-## Tool preferences
+## Tools
 
-- Prefer `rg`/`fd` over `grep -r`/`find` when available.
-- Use the project's existing conventions (naming, comment density, structure)
-  over introducing new ones, even if you'd personally do it differently.
-- Prefer explicit, readable code over clever or dense one-liners, even when
-  the clever version is shorter.
-- Use rtk (Rust Token Killer, github.com/rtk-ai/rtk) when available to reduce
-  noisy shell output. It is installed declaratively and its Claude Code hook
-  is already configured on this machine. If it is missing, report that rather
-  than installing it or running `rtk init -g` automatically.
-
-## Universal habits
-
-- Read a file before editing it. Don't guess at line numbers or content.
-- If you don't recognize a tool, library, or term, look it up on a reliable
-  source before guessing or assuming what it is. Say briefly what you found
-  and where.
-- Match commit message style to the repo's existing history.
-- When you hit something outside what you were asked to do (dead code, a bug,
-  a missing test) and fixing it now would bloat the change, flag it rather
-  than silently expanding scope or silently ignoring it.
-
-## Notes
-
-This file is the single source of truth for both tools:
-- Codex reads it as `~/.codex/AGENTS.md`.
-- Claude Code reads it as `~/.claude/CLAUDE.md`.
-Both are symlinks back to this file — edit here, not at the symlink target.
+- Prefer `rg` and `fd` over `grep -r` and `find`.
+- rtk (Rust Token Killer, github.com/rtk-ai/rtk) shortens noisy shell output.
+  A Claude Code hook routes shell commands through rtk automatically. If rtk
+  is missing, report that instead of installing it or running `rtk init -g`,
+  because rtk is installed declaratively and an ad-hoc install would drift
+  from that setup.
 
 ## Documentation writing style
 
