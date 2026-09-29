@@ -23,6 +23,13 @@
 <!-- Files, directories, or systems an agent must not change without asking
      first, each with its reason. -->
 
+## Model choice
+
+- On every prompt, judge whether the current model will do a good job on the
+  request. If it will, continue without comment. If it will not, name a
+  better-suited model with a one-line reason and stop until the user
+  confirms, unless the user has already said to continue anyway.
+
 ## Skills
 
 - Project skills live in `.agents/skills/`. `.claude/skills` is a symlink to

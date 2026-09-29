@@ -11,6 +11,13 @@ and `~/.codex/AGENTS.md` are symlinks to it.
   file. Where the two conflict, the repo's file wins, because it knows more
   about that repo.
 
+## Model choice
+
+- On every prompt, judge whether the current model will do a good job on the
+  request. If it will, continue without comment. If it will not, name a
+  better-suited model with a one-line reason and stop until I confirm, unless
+  I have already told you to continue anyway.
+
 ## Tools
 
 - In the shell, prefer `rg` and `fd` over `grep -r` and `find`.
