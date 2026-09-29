@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # init-project.sh — scaffold a project for both Claude Code and Codex.
-# Run from the project's repo root.
+# Run from the project's repo root. Safe to re-run: it never overwrites
+# existing files.
 #
 # Usage:
-#   /path/to/dotagents/templates/init-project.sh            # symlink CLAUDE.md
-#   /path/to/dotagents/templates/init-project.sh --import    # real CLAUDE.md
-#                                                              with @AGENTS.md
+#   ~/dotfiles/agents/templates/init-project.sh             # CLAUDE.md imports AGENTS.md
+#   ~/dotfiles/agents/templates/init-project.sh --symlink   # CLAUDE.md -> AGENTS.md
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -22,21 +22,36 @@ if [[ "$PROJECT_ROOT" != "$GIT_ROOT" ]]; then
   exit 1
 fi
 
-IMPORT_MODE=false
+SYMLINK_MODE=false
 for arg in "$@"; do
   case "$arg" in
-    --import) IMPORT_MODE=true ;;
+    --symlink) SYMLINK_MODE=true ;;
     *) echo "unknown flag: $arg" >&2; exit 1 ;;
   esac
 done
 
-echo "== init-project ($PROJECT_ROOT) =="
+# Skill names allow lowercase letters, digits, and hyphens, so the repo name
+# is normalized before it is used as the skill prefix.
+REPO_NAME="$(basename "$PROJECT_ROOT" \
+  | tr '[:upper:]' '[:lower:]' \
+  | sed -E 's/[^a-z0-9-]+/-/g; s/-+/-/g; s/^-//; s/-$//')"
+if [[ -z "$REPO_NAME" ]]; then
+  echo "error: could not derive a skill prefix from the directory name" >&2
+  exit 1
+fi
+
+# Copy a template, replacing {{REPO}} with the skill prefix.
+render_template() {
+  sed "s/{{REPO}}/$REPO_NAME/g" "$1" > "$2"
+}
+
+echo "== init-project ($PROJECT_ROOT, skill prefix: $REPO_NAME) =="
 
 # --- AGENTS.md ---------------------------------------------------------------
 if [[ -e "$PROJECT_ROOT/AGENTS.md" ]]; then
   echo "skip: AGENTS.md already exists, not clobbering"
 else
-  cp "$SCRIPT_DIR/AGENTS.md.tmpl" "$PROJECT_ROOT/AGENTS.md"
+  render_template "$SCRIPT_DIR/AGENTS.md.tmpl" "$PROJECT_ROOT/AGENTS.md"
   echo "created: AGENTS.md (from template)"
 fi
 
@@ -54,55 +69,93 @@ fi
 # --- CLAUDE.md ----------------------------------------------------------------
 if [[ -e "$PROJECT_ROOT/CLAUDE.md" || -L "$PROJECT_ROOT/CLAUDE.md" ]]; then
   echo "skip: CLAUDE.md already exists, not clobbering"
-elif [[ "$IMPORT_MODE" == true ]]; then
+elif [[ "$SYMLINK_MODE" == true ]]; then
+  ln -s AGENTS.md "$PROJECT_ROOT/CLAUDE.md"
+  echo "created: CLAUDE.md -> AGENTS.md (symlink)"
+else
   cat > "$PROJECT_ROOT/CLAUDE.md" << 'EOF'
 @AGENTS.md
 
-## Claude Code
-
-<!-- Claude-specific instructions that don't apply to Codex, or that
-     Windows contributors (who may not see AGENTS.md conventions the same
-     way) need spelled out explicitly here. -->
+<!-- Claude-only instructions go below this line. Instructions for every
+     agent belong in AGENTS.md, so Codex sees them too. -->
 EOF
-  echo "created: CLAUDE.md (real file, @AGENTS.md import + Claude Code section)"
-else
-  ln -s AGENTS.md "$PROJECT_ROOT/CLAUDE.md"
-  echo "created: CLAUDE.md -> AGENTS.md (symlink)"
+  echo "created: CLAUDE.md (imports AGENTS.md)"
 fi
 
 # --- skills -------------------------------------------------------------------
-mkdir -p "$PROJECT_ROOT/.agents/skills" "$PROJECT_ROOT/.claude/skills"
-echo "ensured: .agents/skills/ and .claude/skills/"
+mkdir -p "$PROJECT_ROOT/.agents/skills"
 
 shopt -s nullglob
 SKILL_DIRS=("$PROJECT_ROOT"/.agents/skills/*/)
 shopt -u nullglob
 
-for dir in "${SKILL_DIRS[@]}"; do
-  name="$(basename "$dir")"
-  link="$PROJECT_ROOT/.claude/skills/$name"
-  if [[ -L "$link" ]]; then
-    echo "skip: .claude/skills/$name already linked"
-  elif [[ -e "$link" ]]; then
-    echo "skip: .claude/skills/$name exists and is not a symlink, not touching"
-  else
-    ln -s "../../.agents/skills/$name" "$link"
-    echo "linked: .claude/skills/$name -> ../../.agents/skills/$name"
-  fi
-done
+# The example skill is only added to a repo that has no skills yet, so
+# deleting it later does not bring it back on the next run.
+if (( ${#SKILL_DIRS[@]} == 0 )); then
+  EXAMPLE="$PROJECT_ROOT/.agents/skills/$REPO_NAME-example"
+  mkdir -p "$EXAMPLE/agents"
+  render_template "$SCRIPT_DIR/skill/SKILL.md.tmpl" "$EXAMPLE/SKILL.md"
+  cp "$SCRIPT_DIR/skill/agents/openai.yaml" "$EXAMPLE/agents/openai.yaml"
+  echo "created: .agents/skills/$REPO_NAME-example (example skill)"
+  SKILL_DIRS=("$EXAMPLE/")
+fi
+
+CLAUDE_SKILLS="$PROJECT_ROOT/.claude/skills"
+if [[ -L "$CLAUDE_SKILLS" ]]; then
+  echo "skip: .claude/skills is already a symlink"
+elif [[ -d "$CLAUDE_SKILLS" ]]; then
+  # A real .claude/skills directory predates this layout. Link each skill
+  # into it instead of replacing the directory.
+  echo "note: .claude/skills is a real directory; linking skills one by one"
+  for dir in "${SKILL_DIRS[@]}"; do
+    name="$(basename "$dir")"
+    link="$CLAUDE_SKILLS/$name"
+    if [[ -L "$link" ]]; then
+      echo "skip: .claude/skills/$name already linked"
+    elif [[ -e "$link" ]]; then
+      echo "skip: .claude/skills/$name exists and is not a symlink, not touching"
+    else
+      ln -s "../../.agents/skills/$name" "$link"
+      echo "linked: .claude/skills/$name -> ../../.agents/skills/$name"
+    fi
+  done
+else
+  mkdir -p "$PROJECT_ROOT/.claude"
+  ln -s ../.agents/skills "$CLAUDE_SKILLS"
+  echo "created: .claude/skills -> ../.agents/skills (symlink)"
+fi
 
 # --- .gitignore ----------------------------------------------------------------
-if [[ -f "$PROJECT_ROOT/.gitignore" ]]; then
-  if ! grep -qxF "CLAUDE.local.md" "$PROJECT_ROOT/.gitignore"; then
-    echo "CLAUDE.local.md" >> "$PROJECT_ROOT/.gitignore"
-    echo "added: CLAUDE.local.md to .gitignore"
-  else
-    echo "skip: CLAUDE.local.md already in .gitignore"
-  fi
+GITIGNORE="$PROJECT_ROOT/.gitignore"
+touch "$GITIGNORE"
+# Appending to a file without a final newline would join two lines.
+if [[ -s "$GITIGNORE" && "$(tail -c 1 "$GITIGNORE")" != "" ]]; then
+  echo >> "$GITIGNORE"
+fi
+
+if grep -qxF "CLAUDE.local.md" "$GITIGNORE"; then
+  echo "skip: CLAUDE.local.md already in .gitignore"
 else
-  echo "CLAUDE.local.md" > "$PROJECT_ROOT/.gitignore"
-  echo "created: .gitignore with CLAUDE.local.md"
+  echo "CLAUDE.local.md" >> "$GITIGNORE"
+  echo "added: CLAUDE.local.md to .gitignore"
+fi
+
+# Skills whose names do not start with the repo name are personal or
+# third-party installs, so only the repo's own skills are committed. The
+# .claude/skills lines only matter when .claude/skills is a real directory.
+if grep -qxF ".agents/skills/*" "$GITIGNORE"; then
+  echo "skip: skill ignore rules already in .gitignore"
+else
+  cat >> "$GITIGNORE" << EOF
+# Commit only agent skills whose names start with "$REPO_NAME".
+.agents/skills/*
+!.agents/skills/$REPO_NAME*
+.claude/skills/*
+!.claude/skills/$REPO_NAME*
+EOF
+  echo "added: skill ignore rules to .gitignore (keeps $REPO_NAME* skills)"
 fi
 
 echo
-echo "done."
+echo "done. Next: fill in AGENTS.md, or ask an agent to. Don't use Claude's"
+echo "/init for this: it writes to CLAUDE.md, which Codex never reads."

@@ -21,6 +21,7 @@ agents/
 │   └── agents/                 # -> ~/.claude/agents (Claude subagents)
 └── templates/
     ├── AGENTS.md.tmpl        # starter for a new project's AGENTS.md
+    ├── skill/                 # example project skill copied into new repos
     └── init-project.sh        # scaffolds AGENTS.md/CLAUDE.md/skills in a repo
 ```
 
@@ -132,32 +133,62 @@ update itself. Re-running is safe: it only rewrites the copy when the
 content has actually drifted, and backs up anything it replaces.
 
 This machine is currently set up in **symlink mode** (default) — instant
-updates, no re-run needed — because Cowork was reported as not the primary
-surface for coding work here. If that changes, switch with the flag above.
-
-## Project scaffolding
+updates, no re-run needed — because Cowork was reported as not the primary## Project scaffolding
 
 From a project's Git repository root:
 
 ```bash
-/path/to/dotagents/templates/init-project.sh              # CLAUDE.md as symlink
-/path/to/dotagents/templates/init-project.sh --import      # CLAUDE.md as real
-                                                              file with @AGENTS.md
+~/dotfiles/agents/templates/init-project.sh
 ```
 
-It creates `AGENTS.md` from the template (never clobbers an existing one),
-creates `CLAUDE.md`, sets up `.agents/skills/` + `.claude/skills/` with
-per-skill symlinks, and adds `CLAUDE.local.md` to `.gitignore`. It also warns
-if it finds an `AGENTS.override.md` at the repo root: Codex reads at most
-one instruction file per directory and prefers the override, so an override
-at root **silences** the committed `AGENTS.md` for Codex rather than adding
-to it — likely not what you want if `AGENTS.md` also has real content.
+Pass `--symlink` to make `CLAUDE.md` a symlink to `AGENTS.md` instead of a
+file that imports it. The script never overwrites an existing file, so
+re-running it is safe. It exits without changing anything when run outside a
+Git repository or from a directory below its root.
 
-The script exits without changing anything when run outside a Git repository
-or from a directory below its root.
+The script creates these files:
 
-Use `--import` for repos with Windows contributors (who may not handle the
-symlink the same way) or when you need Claude-specific instructions that
+- `AGENTS.md`, from `templates/AGENTS.md.tmpl`. The template asks for
+  commands, how to verify a change, deliberate decisions, and files not to
+  touch, because an agent cannot work those out from the code.
+- `CLAUDE.md`, containing `@AGENTS.md`. The `@` line makes Claude Code load
+  `AGENTS.md` in full. Claude Code reads `AGENTS.md` without help only from
+  v2.1.277, so older versions need this file. Claude-only instructions go
+  below the import line.
+- `.agents/skills/<repo>-example/`, an example skill copied from
+  `templates/skill/`, when the repo has no skills yet. The example sets
+  `disable-model-invocation: true` for Claude Code and
+  `policy.allow_implicit_invocation: false` in `agents/openai.yaml` for
+  Codex, so neither agent runs it unless asked by name.
+- `.claude/skills`, a symlink to `../.agents/skills`. Codex reads
+  `.agents/skills/` and Claude Code reads `.claude/skills/`, so the symlink
+  lets both load the same skills, including skills added later. When
+  `.claude/skills` is already a real directory, the script links each skill
+  into it instead, and skills added later need another run.
+- `.gitignore` entries for `CLAUDE.local.md` and for every skill whose name
+  does not start with the repo name. For a repo named `etl-pipeline`,
+  `.agents/skills/etl-pipeline-backfill/` is committed and
+  `.agents/skills/pdf/` is ignored. The rule keeps personal and third-party
+  skills out of version control.
+
+`<repo>` is the repository directory name in lowercase, with every character
+other than letters, digits, and hyphens replaced by a hyphen, because skill
+names allow only those characters.
+
+After scaffolding, fill in `AGENTS.md` by hand or ask an agent to. Claude's
+`/init` command is the wrong tool for this step: `/init` writes to
+`CLAUDE.md`, which Codex never reads.
+
+A `CLAUDE.local.md` file (personal, uncommitted Claude instructions) stops
+Claude Code v2.1.277 and later from reading `AGENTS.md` on its own. The
+committed `CLAUDE.md` import keeps `AGENTS.md` loaded in that case.
+
+The script warns when it finds an `AGENTS.override.md` at the repo root.
+Codex reads at most one instruction file per directory and prefers the
+override, so an override at the root replaces the committed `AGENTS.md` for
+Codex instead of adding to it.
+
+d Claude-specific instructions that
 don't belong in the shared `AGENTS.md`.
 
 ## What this repo will never touch

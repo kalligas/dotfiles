@@ -1,16 +1,32 @@
 # Project notes for agents
 
-<!-- One paragraph: what this project is and does. -->
+<!-- Fill in each section, then delete any section that stays empty. Keep
+     only what an agent could not work out by reading the code. -->
 
-## Conventions
+## Commands
 
-<!-- Language/framework, formatting, test commands, build commands. -->
+<!-- Exact commands to install, build, lint, and test. Example:
+     `make test` runs the unit tests; `make lint` runs ruff and mypy. -->
+
+## How to verify a change
+
+<!-- The check an agent runs before calling work done, and what passing
+     looks like. Example: `make test` exits 0 and `make lint` prints
+     nothing. -->
 
 ## Deliberate decisions
 
-<!-- Things a reasonable agent might "fix" that are intentional. -->
+<!-- Choices that look wrong but are intentional, each with its reason. -->
 
 ## Do not touch
 
-<!-- Files, directories, or systems an agent should never modify without
-     asking first. -->
+<!-- Files, directories, or systems an agent must not change without asking
+     first, each with its reason. -->
+
+## Skills
+
+- Project skills live in `.agents/skills/`. `.claude/skills` is a symlink to
+  that directory, so Claude Code and Codex load the same skills.
+- Name every skill meant for the repo `{{REPO}}-<topic>`, for example
+  `{{REPO}}-release`. `.gitignore` excludes skills with any other name, so
+  personal or third-party skills installed here stay out of version control.
