@@ -17,6 +17,10 @@ and `~/.codex/AGENTS.md` are symlinks to it.
   request. If it will, continue without comment. If it will not, name a
   better-suited model with a one-line reason and stop until I confirm, unless
   I have already told you to continue anyway.
+- If a faster, cheaper model would do the job just as well, for example once
+  a non-trivial implementation is agreed and only execution remains, say so
+  in one line and keep working. I decide whether to switch. Skip this for
+  small fixes.
 
 ## Tools
 
