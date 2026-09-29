@@ -26,9 +26,10 @@ agents/
 
 ## Machine scope vs. project scope
 
-- **Machine scope** (`shared/AGENTS.md`): working agreements, safety rails,
-  tool preferences, universal habits — things true of *you*, regardless of
-  what repo you're in. This is what `install.sh` wires up.
+- **Machine scope** (`shared/AGENTS.md`): personal preferences that apply
+  in every repo and that the agents would not follow by default, such as
+  tool choices and writing style. Leave out rules the tools already follow
+  on their own. This is what `install.sh` wires up.
 - **Project scope** (a project's own `AGENTS.md`): facts specific to that
   codebase — its conventions, its "don't touch this", its build/test
   commands. Created per-project with `templates/init-project.sh`, never here.
