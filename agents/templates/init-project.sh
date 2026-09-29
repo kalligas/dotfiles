@@ -6,6 +6,7 @@
 # Usage:
 #   ~/dotfiles/agents/templates/init-project.sh             # CLAUDE.md imports AGENTS.md
 #   ~/dotfiles/agents/templates/init-project.sh --symlink   # CLAUDE.md -> AGENTS.md
+#   ~/dotfiles/agents/templates/init-project.sh --prefix wf # skills named wf-<topic>
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -23,29 +24,46 @@ if [[ "$PROJECT_ROOT" != "$GIT_ROOT" ]]; then
 fi
 
 SYMLINK_MODE=false
-for arg in "$@"; do
-  case "$arg" in
+SKILL_PREFIX=""
+while (( $# > 0 )); do
+  case "$1" in
     --symlink) SYMLINK_MODE=true ;;
-    *) echo "unknown flag: $arg" >&2; exit 1 ;;
+    --prefix)
+      if (( $# < 2 )); then
+        echo "error: --prefix needs a value" >&2
+        exit 1
+      fi
+      SKILL_PREFIX="$2"
+      shift
+      ;;
+    --prefix=*) SKILL_PREFIX="${1#--prefix=}" ;;
+    *) echo "unknown flag: $1" >&2; exit 1 ;;
   esac
+  shift
 done
 
-# Skill names allow lowercase letters, digits, and hyphens, so the repo name
-# is normalized before it is used as the skill prefix.
-REPO_NAME="$(basename "$PROJECT_ROOT" \
-  | tr '[:upper:]' '[:lower:]' \
-  | sed -E 's/[^a-z0-9-]+/-/g; s/-+/-/g; s/^-//; s/-$//')"
-if [[ -z "$REPO_NAME" ]]; then
-  echo "error: could not derive a skill prefix from the directory name" >&2
+# Skill names allow lowercase letters, digits, and hyphens. Without
+# --prefix, the repo directory name is normalized to those characters.
+if [[ -z "$SKILL_PREFIX" ]]; then
+  SKILL_PREFIX="$(basename "$PROJECT_ROOT" \
+    | tr '[:upper:]' '[:lower:]' \
+    | sed -E 's/[^a-z0-9-]+/-/g; s/-+/-/g; s/^-//; s/-$//')"
+  if [[ -z "$SKILL_PREFIX" ]]; then
+    echo "error: could not derive a skill prefix from the directory name;" >&2
+    echo "pass one with --prefix" >&2
+    exit 1
+  fi
+elif ! [[ "$SKILL_PREFIX" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+  echo "error: --prefix must be lowercase letters, digits, and single hyphens" >&2
   exit 1
 fi
 
-# Copy a template, replacing {{REPO}} with the skill prefix.
+# Copy a template, replacing {{PREFIX}} with the skill prefix.
 render_template() {
-  sed "s/{{REPO}}/$REPO_NAME/g" "$1" > "$2"
+  sed "s/{{PREFIX}}/$SKILL_PREFIX/g" "$1" > "$2"
 }
 
-echo "== init-project ($PROJECT_ROOT, skill prefix: $REPO_NAME) =="
+echo "== init-project ($PROJECT_ROOT, skill prefix: $SKILL_PREFIX) =="
 
 # --- AGENTS.md ---------------------------------------------------------------
 if [[ -e "$PROJECT_ROOT/AGENTS.md" ]]; then
@@ -92,11 +110,11 @@ shopt -u nullglob
 # The example skill is only added to a repo that has no skills yet, so
 # deleting it later does not bring it back on the next run.
 if (( ${#SKILL_DIRS[@]} == 0 )); then
-  EXAMPLE="$PROJECT_ROOT/.agents/skills/$REPO_NAME-example"
+  EXAMPLE="$PROJECT_ROOT/.agents/skills/$SKILL_PREFIX-example"
   mkdir -p "$EXAMPLE/agents"
   render_template "$SCRIPT_DIR/skill/SKILL.md.tmpl" "$EXAMPLE/SKILL.md"
   cp "$SCRIPT_DIR/skill/agents/openai.yaml" "$EXAMPLE/agents/openai.yaml"
-  echo "created: .agents/skills/$REPO_NAME-example (example skill)"
+  echo "created: .agents/skills/$SKILL_PREFIX-example (example skill)"
   SKILL_DIRS=("$EXAMPLE/")
 fi
 
@@ -140,20 +158,21 @@ else
   echo "added: CLAUDE.local.md to .gitignore"
 fi
 
-# Skills whose names do not start with the repo name are personal or
+# Skills whose names do not start with "<prefix>-" are personal or
 # third-party installs, so only the repo's own skills are committed. The
+# hyphen stops a short prefix such as "wf" from also keeping "workflow". The
 # .claude/skills lines only matter when .claude/skills is a real directory.
 if grep -qxF ".agents/skills/*" "$GITIGNORE"; then
   echo "skip: skill ignore rules already in .gitignore"
 else
   cat >> "$GITIGNORE" << EOF
-# Commit only agent skills whose names start with "$REPO_NAME".
+# Commit only agent skills whose names start with "$SKILL_PREFIX-".
 .agents/skills/*
-!.agents/skills/$REPO_NAME*
+!.agents/skills/$SKILL_PREFIX-*
 .claude/skills/*
-!.claude/skills/$REPO_NAME*
+!.claude/skills/$SKILL_PREFIX-*
 EOF
-  echo "added: skill ignore rules to .gitignore (keeps $REPO_NAME* skills)"
+  echo "added: skill ignore rules to .gitignore (keeps $SKILL_PREFIX-* skills)"
 fi
 
 echo

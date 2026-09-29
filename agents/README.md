@@ -142,7 +142,9 @@ From a project's Git repository root:
 ```
 
 Pass `--symlink` to make `CLAUDE.md` a symlink to `AGENTS.md` instead of a
-file that imports it. The script never overwrites an existing file, so
+file that imports it. Pass `--prefix <name>` to choose the skill prefix,
+for example `--prefix wf` in `wikifarmer-agents` for skills named
+`wf-<topic>`. The script never overwrites an existing file, so
 re-running it is safe. It exits without changing anything when run outside a
 Git repository or from a directory below its root.
 
@@ -155,7 +157,7 @@ The script creates these files:
   `AGENTS.md` in full. Claude Code reads `AGENTS.md` without help only from
   v2.1.277, so older versions need this file. Claude-only instructions go
   below the import line.
-- `.agents/skills/<repo>-example/`, an example skill copied from
+- `.agents/skills/<prefix>-example/`, an example skill copied from
   `templates/skill/`, when the repo has no skills yet. The example sets
   `disable-model-invocation: true` for Claude Code and
   `policy.allow_implicit_invocation: false` in `agents/openai.yaml` for
@@ -166,14 +168,18 @@ The script creates these files:
   `.claude/skills` is already a real directory, the script links each skill
   into it instead, and skills added later need another run.
 - `.gitignore` entries for `CLAUDE.local.md` and for every skill whose name
-  does not start with the repo name. For a repo named `etl-pipeline`,
-  `.agents/skills/etl-pipeline-backfill/` is committed and
-  `.agents/skills/pdf/` is ignored. The rule keeps personal and third-party
-  skills out of version control.
+  does not start with `<prefix>-`. With the prefix `ep`,
+  `.agents/skills/ep-backfill/` is committed and `.agents/skills/pdf/` is
+  ignored. The rule keeps personal and third-party skills out of version
+  control. The hyphen stops a short prefix such as `wf` from also keeping a
+  third-party skill named `workflow`.
 
-`<repo>` is the repository directory name in lowercase, with every character
-other than letters, digits, and hyphens replaced by a hyphen, because skill
-names allow only those characters.
+Without `--prefix`, `<prefix>` is the repository directory name in
+lowercase, with every character other than letters, digits, and hyphens
+replaced by a hyphen, because skill names allow only those characters. A
+prefix passed with `--prefix` must already follow those rules. Re-running
+the script with a different prefix leaves an existing `.gitignore` rule
+unchanged, so edit those lines by hand after a rename.
 
 After scaffolding, fill in `AGENTS.md` by hand or ask an agent to. Claude's
 `/init` command is the wrong tool for this step: `/init` writes to

@@ -1,5 +1,5 @@
 ---
-name: {{REPO}}-example
+name: {{PREFIX}}-example
 description: Example project skill that shows the layout to copy for a new skill. Does nothing useful; run it only when asked for by name.
 disable-model-invocation: true
 ---
@@ -7,7 +7,7 @@ disable-model-invocation: true
 # Example skill
 
 This skill is a template. To make a real skill, copy this folder to
-`.agents/skills/{{REPO}}-<topic>/`, set `name` to the new folder name, and
+`.agents/skills/{{PREFIX}}-<topic>/`, set `name` to the new folder name, and
 replace this text with the procedure.
 
 A skill holds a procedure or reference material that only some tasks need.
@@ -27,10 +27,10 @@ costs no context until then. Facts that apply to every task belong in
 ## Invocation
 
 - `disable-model-invocation: true` stops Claude Code from running the skill
-  on its own; `/{{REPO}}-example` still runs it. Remove the line from a skill
+  on its own; `/{{PREFIX}}-example` still runs it. Remove the line from a skill
   that the agent should pick up automatically.
 - `policy.allow_implicit_invocation: false` in `agents/openai.yaml` does the
-  same for Codex; `${{REPO}}-example` still runs it. Delete the file from a
+  same for Codex; `${{PREFIX}}-example` still runs it. Delete the file from a
   skill that Codex should pick up automatically.
 
 ## Steps
