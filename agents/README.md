@@ -141,8 +141,8 @@ From a project's Git repository root:
 ~/dotfiles/agents/templates/init-project.sh
 ```
 
-Pass `--symlink` to make `CLAUDE.md` a symlink to `AGENTS.md` instead of a
-file that imports it. Pass `--prefix <name>` to choose the skill prefix,
+Pass `--import` to make `CLAUDE.md` a file that imports `AGENTS.md` instead
+of a symlink to it. Pass `--prefix <name>` to choose the skill prefix,
 for example `--prefix wf` in `wikifarmer-agents` for skills named
 `wf-<topic>`. The script never overwrites an existing file, so
 re-running it is safe. It exits without changing anything when run outside a
@@ -153,10 +153,15 @@ The script creates these files:
 - `AGENTS.md`, from `templates/AGENTS.md.tmpl`. The template asks for
   commands, how to verify a change, deliberate decisions, and files not to
   touch, because an agent cannot work those out from the code.
-- `CLAUDE.md`, containing `@AGENTS.md`. The `@` line makes Claude Code load
-  `AGENTS.md` in full. Claude Code reads `AGENTS.md` without help only from
-  v2.1.277, so older versions need this file. Claude-only instructions go
-  below the import line.
+- `CLAUDE.md`, a symlink to `AGENTS.md`. Claude Code reads `AGENTS.md`
+  without help only from v2.1.277, so older versions need this file.
+  Claude's Edit and Write tools refuse to write through the symlink and edit
+  `AGENTS.md` instead. With `--import`, `CLAUDE.md` is a real file containing
+  `@AGENTS.md`, which loads `AGENTS.md` in full and leaves room for
+  Claude-only instructions below that line. Use `--import` when a
+  contributor works on Windows without symlink support, because Git then
+  checks the symlink out as a one-line text file. The `.claude/skills`
+  symlink has the same limitation.
 - `.agents/skills/<prefix>-example/`, an example skill copied from
   `templates/skill/`, when the repo has no skills yet. The example sets
   `disable-model-invocation: true` for Claude Code and
@@ -187,7 +192,7 @@ After scaffolding, fill in `AGENTS.md` by hand or ask an agent to. Claude's
 
 A `CLAUDE.local.md` file (personal, uncommitted Claude instructions) stops
 Claude Code v2.1.277 and later from reading `AGENTS.md` on its own. The
-committed `CLAUDE.md` import keeps `AGENTS.md` loaded in that case.
+committed `CLAUDE.md` keeps `AGENTS.md` loaded in that case.
 
 The script warns when it finds an `AGENTS.override.md` at the repo root.
 Codex reads at most one instruction file per directory and prefers the

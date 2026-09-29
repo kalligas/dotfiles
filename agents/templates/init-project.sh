@@ -4,8 +4,8 @@
 # existing files.
 #
 # Usage:
-#   ~/dotfiles/agents/templates/init-project.sh             # CLAUDE.md imports AGENTS.md
-#   ~/dotfiles/agents/templates/init-project.sh --symlink   # CLAUDE.md -> AGENTS.md
+#   ~/dotfiles/agents/templates/init-project.sh             # CLAUDE.md -> AGENTS.md
+#   ~/dotfiles/agents/templates/init-project.sh --import    # CLAUDE.md imports AGENTS.md
 #   ~/dotfiles/agents/templates/init-project.sh --prefix wf # skills named wf-<topic>
 set -euo pipefail
 
@@ -23,11 +23,11 @@ if [[ "$PROJECT_ROOT" != "$GIT_ROOT" ]]; then
   exit 1
 fi
 
-SYMLINK_MODE=false
+IMPORT_MODE=false
 SKILL_PREFIX=""
 while (( $# > 0 )); do
   case "$1" in
-    --symlink) SYMLINK_MODE=true ;;
+    --import) IMPORT_MODE=true ;;
     --prefix)
       if (( $# < 2 )); then
         echo "error: --prefix needs a value" >&2
@@ -87,10 +87,7 @@ fi
 # --- CLAUDE.md ----------------------------------------------------------------
 if [[ -e "$PROJECT_ROOT/CLAUDE.md" || -L "$PROJECT_ROOT/CLAUDE.md" ]]; then
   echo "skip: CLAUDE.md already exists, not clobbering"
-elif [[ "$SYMLINK_MODE" == true ]]; then
-  ln -s AGENTS.md "$PROJECT_ROOT/CLAUDE.md"
-  echo "created: CLAUDE.md -> AGENTS.md (symlink)"
-else
+elif [[ "$IMPORT_MODE" == true ]]; then
   cat > "$PROJECT_ROOT/CLAUDE.md" << 'EOF'
 @AGENTS.md
 
@@ -98,6 +95,9 @@ else
      agent belong in AGENTS.md, so Codex sees them too. -->
 EOF
   echo "created: CLAUDE.md (imports AGENTS.md)"
+else
+  ln -s AGENTS.md "$PROJECT_ROOT/CLAUDE.md"
+  echo "created: CLAUDE.md -> AGENTS.md (symlink)"
 fi
 
 # --- skills -------------------------------------------------------------------
