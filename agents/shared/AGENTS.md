@@ -18,9 +18,11 @@ and `~/.codex/AGENTS.md` are symlinks to it.
   better-suited model with a one-line reason and stop until I confirm, unless
   I have already told you to continue anyway.
 - If a faster, cheaper model would do the job just as well, for example once
-  a non-trivial implementation is agreed and only execution remains, say so
-  in one line and keep working. I decide whether to switch. Skip this for
-  small fixes.
+  a non-trivial implementation is agreed and only execution remains, name it
+  with a one-line reason and stop until I confirm, unless I have already
+  told you to continue anyway. Skip this for small fixes, because switching
+  models re-reads the whole conversation without the prompt cache and can
+  cost more than finishing.
 
 ## Tools
 
