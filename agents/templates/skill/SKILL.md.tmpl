@@ -22,7 +22,8 @@ costs no context until then. Facts that apply to every task belong in
   first.
 - `agents/openai.yaml`: settings that only Codex reads.
 - Optional `scripts/`, `references/`, and `assets/` folders hold files that
-  the instructions point to.
+  the instructions point to. A file in `references/` that humans also need
+  is a symlink to the file in `docs/`, so the skill never keeps its own copy.
 
 ## Invocation
 

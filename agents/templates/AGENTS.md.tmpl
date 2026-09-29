@@ -1,7 +1,8 @@
 # Project notes for agents
 
 <!-- Fill in each section, then delete any section that stays empty. Keep
-     only what an agent could not work out by reading the code. -->
+     only what an agent could not work out by reading the code. Knowledge
+     that humans need too belongs in docs/, with a pointer here. -->
 
 ## Commands
 
@@ -36,6 +37,20 @@
   switching models re-reads the whole conversation without the prompt cache
   and can cost more than finishing.
 
+## Where knowledge lives
+
+- Put knowledge for humans, such as setup, conventions, architecture, and
+  runbooks, in `docs/`. Component READMEs stay short and link to `docs/` for
+  anything longer.
+- Keep this file for instructions that only agents need. When a file in
+  `docs/` is useful to agents, name it here and say when to read it, for
+  example "Before changing a dbt model, read `docs/dbt-conventions.md`." Do
+  not copy the content, and do not use `@` imports, because an import loads
+  the file into every session.
+- Turn a multi-step procedure, or knowledge that only some tasks need, into
+  a skill instead of a section here, because a skill loads only when it is
+  used and this file loads every session.
+
 ## Skills
 
 - Project skills live in `.agents/skills/`. `.claude/skills` is a symlink to
@@ -43,3 +58,7 @@
 - Name every skill meant for the repo `{{PREFIX}}-<topic>`, for example
   `{{PREFIX}}-release`. `.gitignore` excludes skills with any other name, so
   personal or third-party skills installed here stay out of version control.
+- When a skill needs knowledge from `docs/`, symlink the file into the
+  skill's `references/` folder instead of copying it, for example
+  `.agents/skills/{{PREFIX}}-release/references/release.md ->
+  ../../../../docs/release.md`.

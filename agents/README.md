@@ -152,7 +152,12 @@ The script creates these files:
 
 - `AGENTS.md`, from `templates/AGENTS.md.tmpl`. The template asks for
   commands, how to verify a change, deliberate decisions, and files not to
-  touch, because an agent cannot work those out from the code.
+  touch, because an agent cannot work those out from the code. Its "Where
+  knowledge lives" section sets one home for each kind of knowledge:
+  human-facing knowledge in `docs/`, agent-only instructions in `AGENTS.md`,
+  and procedures in skills. A skill that needs a doc symlinks it into its
+  `references/` folder. The script does not create `docs/`, because an empty
+  folder is not tracked by Git; the first doc creates it.
 - `CLAUDE.md`, a symlink to `AGENTS.md`. Claude Code reads `AGENTS.md`
   without help only from v2.1.277, so older versions need this file.
   Claude's Edit and Write tools refuse to write through the symlink and edit
