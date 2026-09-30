@@ -53,7 +53,20 @@ sudo env DOTFILES_USER="$DOTFILES_USER" "$NIX_BIN" \
   run github:nix-darwin/nix-darwin/nix-darwin-26.05#darwin-rebuild -- \
   switch --flake "$HOME/.dotfiles#mac" --impure
 
-echo "==> Step 6: agent configuration"
+echo "==> Step 6: Unity Gateway"
+# uv comes from Home Manager, so it exists only after the first switch, and
+# this shell's PATH may not include the new profile yet.
+UV_BIN="$(command -v uv || echo "/etc/profiles/per-user/$REAL_USER/bin/uv")"
+if command -v ug >/dev/null 2>&1; then
+  echo "    ug already installed, skipping"
+else
+  # --managed-python builds ug on uv's own Python, because Homebrew's Python
+  # is only a dependency of other formulae and can be removed or upgraded.
+  "$UV_BIN" tool install --managed-python \
+    git+https://github.com/databricks/unity-gateway@v0.2.0
+fi
+
+echo "==> Step 7: agent configuration"
 "$DIR/agents/install.sh"
 
 echo "==> Done. Use ./rebuild.sh for future changes."
