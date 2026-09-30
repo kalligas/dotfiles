@@ -35,6 +35,7 @@ in
     ripgrep
     starship
     tree-sitter
+    uv
     vivid
     yazi
   ]) ++ (with herdrPkgs; [

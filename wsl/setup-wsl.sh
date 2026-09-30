@@ -23,7 +23,7 @@ if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
 fi
 
 brew update
-brew install neovim starship bat git-delta lazygit yazi lsd vivid ripgrep fd tree-sitter herdr fzf jq zsh
+brew install neovim starship bat git-delta lazygit yazi lsd vivid ripgrep fd tree-sitter herdr fzf jq uv zsh
 
 mkdir -p "$HOME/.local/bin"
 export PATH="$HOME/.local/bin:$PATH"

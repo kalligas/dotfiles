@@ -7,7 +7,7 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 - macOS defaults: dark mode, fast key repeat, clean Finder/Dock defaults, tap-to-click.
 - Homebrew casks: WezTerm and Nerd Font fallbacks.
 - Claude Code: installed with the official native installer into `~/.local/bin`, not Nix. The native install updates itself, and a second Nix copy would share the same Keychain login, which can cause repeated logouts.
-- Nix user packages: Neovim, Starship, Codex, Herdr, Node.js/npm/npx, ripgrep, fd, fzf, jq, lazygit, yazi, lsd, vivid, bat, delta, and tree-sitter.
+- Nix user packages: Neovim, Starship, Codex, Herdr, Node.js/npm/npx, ripgrep, fd, fzf, jq, lazygit, yazi, lsd, vivid, bat, delta, tree-sitter, and uv.
 - Terminal/editor style: Cyberdream dark palette, blurred/translucent WezTerm, transparent Neovim, glass-friendly Herdr.
 - CLI theming: Cyberdream Starship, Bat, Delta, LazyGit, Yazi, LSD, and Vivid.
 - Workflow helpers: Treehouse aliases/functions and Herdr aliases.
@@ -29,7 +29,7 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 | Theme | Cyberdream | Keep a consistent color palette across the terminal, editor, and CLI tools. |
 | Package and configuration managers | Nix, nix-darwin, Home Manager, Homebrew | Install tools and configure macOS declaratively. |
 | Coding agents | Codex, Claude Code | Provide AI-assisted development workflows. |
-| CLI utilities | Bat, Delta, fd, fzf, jq, LazyGit, LSD, ripgrep, Tree-sitter, Vivid, Yazi | Improve file viewing, search, Git, JSON processing, syntax parsing, colors, and navigation. |
+| CLI utilities | Bat, Delta, fd, fzf, jq, LazyGit, LSD, ripgrep, Tree-sitter, uv, Vivid, Yazi | Improve file viewing, search, Git, JSON processing, syntax parsing, Python project management, colors, and navigation. |
 
 ## Shortcut Reference
 
