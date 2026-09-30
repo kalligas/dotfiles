@@ -42,8 +42,13 @@
     onActivation.autoUpdate = true;
     onActivation.extraFlags = [ "--force" ];
 
+    taps = [
+      "databricks/tap"
+    ];
+
     brews = [
       "awscli"
+      "databricks/tap/databricks"
       "gh"
       "kubectl"
       "libpq"
