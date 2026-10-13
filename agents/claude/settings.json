@@ -1,5 +1,5 @@
 {
-  "model": "opus",
+  "model": "sonnet",
   "hooks": {
     "PreToolUse": [
       {
@@ -18,5 +18,9 @@
       "effortLevel": "medium"
     }
   },
-  "theme": "auto"
+  "theme": "auto",
+  "statusLine": {
+    "type": "command",
+    "command": "bash /Users/wikifarmer/dotfiles/agents/claude/statusline.sh"
+  }
 }
