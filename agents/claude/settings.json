@@ -1,5 +1,5 @@
 {
-  "theme": "auto",
+  "model": "opus",
   "hooks": {
     "PreToolUse": [
       {
@@ -12,5 +12,11 @@
         ]
       }
     ]
-  }
+  },
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "medium"
+    }
+  },
+  "theme": "auto"
 }
