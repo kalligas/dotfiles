@@ -57,6 +57,11 @@ in
 
   programs.git = {
     enable = true;
+    # Written to ~/.config/git/ignore, which Git reads in every repository.
+    ignores = [
+      ".DS_Store"
+      "**/.claude/settings.local.json"
+    ];
     settings = {
       core.pager = "delta";
       interactive.diffFilter = "delta --color-only";
