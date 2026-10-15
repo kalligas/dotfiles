@@ -24,7 +24,9 @@ in
 
   home.packages = (with pkgs; [
     bat
+    colima
     delta
+    docker-client
     fd
     fzf
     jq
