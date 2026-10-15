@@ -8,7 +8,6 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 - Homebrew casks: WezTerm and Nerd Font fallbacks.
 - Claude Code: installed with the official native installer into `~/.local/bin`, not Nix. The native install updates itself, and a second Nix copy would share the same Keychain login, which can cause repeated logouts.
 - Nix user packages: Neovim, Starship, Codex, Herdr, Node.js/npm/npx, ripgrep, fd, fzf, jq, lazygit, yazi, lsd, vivid, bat, delta, tree-sitter, and uv.
-- Containers: Colima and the Docker CLI, including Compose and Buildx, installed through Home Manager.
 - Terminal/editor style: Cyberdream dark palette, blurred/translucent WezTerm, transparent Neovim, glass-friendly Herdr.
 - CLI theming: Cyberdream Starship, Bat, Delta, LazyGit, Yazi, LSD, and Vivid.
 - Workflow helpers: Treehouse aliases/functions and Herdr aliases.
@@ -118,25 +117,6 @@ After the first setup, edit files in this repo and apply changes with:
 ```sh
 ./rebuild.sh
 ```
-
-## Containers with Colima
-
-Home Manager installs Colima and the Docker CLI. The Nix Docker package includes
-the Compose and Buildx plugins. Apply package changes with `./rebuild.sh`, then
-start Colima and select the Colima Docker context:
-
-```sh
-colima start
-docker context use colima
-docker info
-docker compose version
-docker buildx version
-```
-
-Use `colima stop` to shut down the virtual machine. Docker Desktop remains
-installed. Colima stores containers and images in a separate virtual machine;
-existing Docker Desktop containers and images remain in Docker Desktop.
-Use `docker context use desktop-linux` to select Docker Desktop again.
 
 ## Token Usage Monitor
 
