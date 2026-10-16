@@ -3,9 +3,9 @@
 Run `scripts/detect_reviewers.sh` by absolute path from the repository under
 review. The script prints each installed CLI and its path. Installation does
 not prove that a CLI is authenticated or that the selected model is available.
-Treat an authentication failure, a timeout, or an empty response as an
-incomplete lens, rather than as a pass with no findings. Use the next available
-reviewer when the selected CLI cannot complete a lens.
+Treat an authentication failure, a rate-limit error, a timeout, or an empty
+response as an incomplete lens, rather than as a pass with no findings. Use the
+next available reviewer when the selected CLI cannot complete a lens.
 
 Choose a different vendor first: Claude or Gemini for a Codex orchestrator,
 and Codex or Gemini for a Claude orchestrator. Use existing model settings
@@ -21,13 +21,25 @@ Create a temporary directory outside the repository:
 review_dir=$(mktemp -d "${TMPDIR:-/tmp}/independent-review.XXXXXX")
 ```
 
-Fill in one prompt from `reviewer-prompt.md` per lens, and save each prompt in
-that directory, for example `$review_dir/spec-compliance.prompt.md`. Use the
-absolute repository path in the prompt. Run commands below from the repository
-root, with a different output basename for each reviewer. Background independent
-processes with `&` when parallel execution is available, then `wait` for every
-PID and inspect every exit status. Keep failed runs separate from completed
-reviews.
+The directory holds everything the run produces:
+
+- `state`: one `NAME=hash` line per snapshot (`START`, `PRE_1`, `POST_1`, and
+  so on). Shell variables do not survive between an agent's tool calls, so
+  every command that needs a hash reads the file back with
+  `. "$review_dir/state"`.
+- `change.diff` and `change.stat`: the change under review, written in
+  Step 1. A reviewer without a shell reads the change from these files.
+- `fix-<round>.diff`: the fix diff of each round, written in Step 5.
+- `<name>.prompt.md`, `<name>.out.md`, `<name>.err.log`: the filled prompt, the
+  review, and the error output of each reviewer. `<name>.status` exists only
+  when the reviewer failed, and names the reason.
+
+Fill one prompt from `reviewer-prompt.md` per lens with
+`scripts/fill_prompt.py`, using a different name for each reviewer, for
+example `spec-compliance`. Use absolute paths in the prompt. Background
+independent processes with `&` when parallel execution is available, then
+`wait` for every PID and inspect every exit status. Keep failed runs separate
+from completed reviews.
 
 The snapshot script uses a temporary Git index and the existing Git identity.
 The snapshot script writes Git objects but leaves refs, the real index, and
@@ -39,46 +51,80 @@ checked-out commit, rather than uncommitted files inside the submodule. Review
 dirty submodules in their own repositories. A sparse checkout limits which
 working files exist locally; use a full checkout for full repository access.
 
+## The runner script
+
+`scripts/run_reviewer.sh` starts one reviewer with the invocation below for
+its CLI:
+
+```sh
+<skill-dir>/scripts/run_reviewer.sh <codex|claude> <repo> "$review_dir" <name> [<related-repo> ...]
+```
+
+The script reads `<name>.prompt.md` and writes `<name>.out.md` and
+`<name>.err.log`. It exits non-zero and writes `<name>.status` when the review
+is empty or the error log shows a rate limit. Chain a fallback reviewer for
+the same lens with `||`:
+
+```sh
+run_reviewer.sh codex "$repo" "$review_dir" security \
+  || run_reviewer.sh claude "$repo" "$review_dir" security
+```
+
 ## Claude Code
 
-For a CLI that supports `--tools`, restrict the available tools as well as the
-allowed commands. `--allowedTools` alone does not remove other tools.
+Give a Claude reviewer no shell. Measured on Claude Code 2.1.301 with a
+`PreToolUse` hook that rewrites shell commands (rtk):
+
+- With `--permission-mode plan`, a `Bash(git log *)` allow rule did not
+  restrict the shell: `databricks --version` also ran. Plan mode also adds
+  instructions about a plan file and ExitPlanMode, which reviewers then
+  discuss in their reports.
+- With `--permission-mode dontAsk` or `manual`, every shell command was
+  denied, including allowed ones, because the hook changes `git log ...` to
+  `rtk git log ...` before the allow rules are matched.
+
+A reviewer with only Read, Grep, and Glob reads the change from
+`change.diff` and searches the repository, and cannot run any command:
 
 ```sh
 claude --print --no-session-persistence --output-format text \
-  --permission-mode plan \
-  --tools 'Read,Grep,Glob,Bash' \
-  --allowedTools 'Read' 'Grep' 'Glob' \
-    'Bash(git diff *)' 'Bash(git show *)' 'Bash(git ls-files *)' \
-    'Bash(git log *)' 'Bash(rg *)' \
+  --permission-mode dontAsk \
+  --tools 'Read,Grep,Glob' \
+  --add-dir "$review_dir" [--add-dir <related-repo> ...] \
   --strict-mcp-config --mcp-config '{"mcpServers":{}}' \
   < "$review_dir/spec-compliance.prompt.md" \
   > "$review_dir/spec-compliance.out.md" \
   2> "$review_dir/spec-compliance.err.log"
 ```
 
-The prompt prohibits edits and commits. Read tools can inspect the repository;
-the approved shell commands inspect diffs and callers. Do not enable tools that
-write files or grant broader shell access to make a review succeed. Project
-hooks and local settings may still run; if those can mutate the repository,
-use a read-only filesystem sandbox or another reviewer. Check `claude --help`
-when an installed version rejects a flag.
+Run the command from the repository root. `dontAsk` denies every tool use
+that would otherwise prompt, so the reviewer can neither write files nor run
+commands. `--add-dir` gives read access to the review directory and to each
+related repository. Check `claude --help` when an installed version rejects a
+flag.
 
 ## Codex
 
 ```sh
 codex exec --sandbox read-only --ephemeral --color never \
+  -C "$repo" \
   --output-last-message "$review_dir/spec-compliance.out.md" \
   - < "$review_dir/spec-compliance.prompt.md" \
   > "$review_dir/spec-compliance.events.log" \
   2> "$review_dir/spec-compliance.err.log"
 ```
 
-The filesystem sandbox enforces read-only repository access. The output file
-is outside the repository and is written by the CLI. Do not use approval or
-sandbox bypass flags. Check `codex exec --help` when an installed version
-rejects a flag. Use the final message as the review result, and inspect logs
-for failures or denied reads.
+The filesystem sandbox enforces read-only access, and still lets Codex read
+related repositories by absolute path. The output file is outside the
+repository and is written by the CLI. Do not use approval or sandbox bypass
+flags. Check `codex exec --help` when an installed version rejects a flag.
+Use the final message as the review result, and inspect logs for failures or
+denied reads.
+
+Run at most one Codex process at a time. Two Codex reviewers started together
+both failed with `429 Too Many Requests` and `exceeded retry limit` in their
+error logs, while single runs succeeded (codex-cli 0.153.4). A failed run
+leaves the `--output-last-message` file missing or empty.
 
 ## Gemini
 
@@ -98,6 +144,7 @@ the shell does not execute text inside the prompt. Plan mode must deny writes
 and mutating tools in the installed version. A sandbox alone may permit writes
 inside the workspace. If the version cannot enforce read-only review, use
 another CLI or a fresh-context subagent instead of enabling automatic approval.
+`run_reviewer.sh` does not start Gemini; run the command above directly.
 
 ## Fresh-context subagents and self-review
 
