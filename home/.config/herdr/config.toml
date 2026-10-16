@@ -12,7 +12,7 @@ name = "terminal"
 
 [theme.custom]
 panel_bg = "reset"
-accent = "#6da5aa"
+accent = "#ffffff"
 green = "#5eff6c"
 blue = "#5ea1ff"
 red = "#ff6e5e"
@@ -31,7 +31,7 @@ pane_borders = true
 pane_outer_borders = false
 pane_gaps = false
 hide_tab_bar_when_single_tab = true
-accent = "#6da5aa"
+accent = "#ffffff"
 
 [ui.toast]
 delivery = "terminal"
