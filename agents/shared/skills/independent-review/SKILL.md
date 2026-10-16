@@ -81,6 +81,13 @@ new.
    `git diff --no-ext-diff --no-textconv <base> $START -- > "$review_dir/change.diff"`
    and `git diff --stat <base> $START > "$review_dir/change.stat"`. The
    snapshot diff includes untracked files that plain `git diff <base>` omits.
+   Also start `$review_dir/process.md`, the log of problems with the review
+   process itself. Append one line with its evidence each time the run departs
+   from this skill: a reviewer that failed or was rerun, an instruction that
+   turned out to be wrong, an ad-hoc script or workaround, a decision this
+   skill does not cover, or a correction from the user. Write each line when
+   the problem happens, because a problem recalled at the end of a long run
+   loses its exact error text.
 3. Collect acceptance criteria from the user's task, the issue or pull request
    description, spec files, and tests. If no written criteria exist, write 3 to
    7 criteria from the stated intent of the change and show the criteria to the
@@ -331,3 +338,16 @@ findings stay open after the run ends. Offer to record each open finding as
 an unticked checkbox in the pull request description, or as a task in the
 project's tracker, with its path, line, and one-sentence problem. A recorded
 finding survives the session, while the ledger does not.
+
+Then read `$review_dir/process.md`. Offer to improve this skill when the log
+shows at least one instruction that turned out to be wrong, or at least two
+workarounds. Many code findings alone are no reason, because they describe the
+change under review, not the review process. When the log is empty or below
+that threshold, say nothing about the skill. The offer lists each problem with
+its evidence, such as an error message, a measured flag behavior, or a step
+that had to be improvised, and the edit to this skill that would prevent it.
+Propose only edits backed by such evidence. Name the skill file this run used,
+and ask whether other copies of the skill exist, for example a global copy and
+a copy inside a project, so that one fix reaches every copy. Make the edits only
+after the user agrees, and keep them out of the code fix batch, because a skill
+edit is a separate change from the code under review.

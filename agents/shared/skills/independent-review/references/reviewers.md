@@ -30,6 +30,9 @@ The directory holds everything the run produces:
 - `change.diff` and `change.stat`: the change under review, written in
   Step 1. A reviewer without a shell reads the change from these files.
 - `fix-<round>.diff`: the fix diff of each round, written in Step 5.
+- `process.md`: one line per problem with the review process itself, with its
+  evidence, written as the problem happens. The orchestrator reads it after
+  the final report to decide whether to offer an improvement to the skill.
 - `<name>.prompt.md`, `<name>.out.md`, `<name>.err.log`: the filled prompt, the
   review, and the error output of each reviewer. `<name>.status` exists only
   when the reviewer failed, and names the reason.
