@@ -12,7 +12,7 @@ name = "terminal"
 
 [theme.custom]
 panel_bg = "reset"
-accent = "#5ef1ff"
+accent = "#6da5aa"
 green = "#5eff6c"
 blue = "#5ea1ff"
 red = "#ff6e5e"
@@ -28,9 +28,10 @@ host_cursor = "native"
 confirm_close = true
 prompt_new_tab_name = false
 pane_borders = true
-pane_gaps = true
+pane_outer_borders = false
+pane_gaps = false
 hide_tab_bar_when_single_tab = true
-accent = "cyan"
+accent = "#6da5aa"
 
 [ui.toast]
 delivery = "terminal"
