@@ -34,6 +34,7 @@ in
     nodejs
     ripgrep
     starship
+    terraform
     tree-sitter
     uv
     vivid
