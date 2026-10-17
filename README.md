@@ -8,6 +8,7 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 - Homebrew casks: WezTerm and Nerd Font fallbacks.
 - Claude Code: installed by `bootstrap.sh` with the official native installer into `~/.local/bin`, not Nix. The native install updates itself, and a second Nix copy would share the same Keychain login, which can cause repeated logouts.
 - Codex: installed as a Homebrew cask, not Nix. Codex releases about weekly, and a Homebrew install can be upgraded in place from Codex's own update prompt or with `brew upgrade --cask codex`, while a Nix install waits for nixpkgs and needs a rebuild.
+- Gemini CLI: installed as a Homebrew formula, not Nix, for the same reason as Codex: Gemini CLI releases about weekly, and the stable nixpkgs channel lags several versions behind. Run `gemini` and choose "Login with Google" to chat on the free tier without an API key. The free tier may use prompts to improve Google's models, so do not paste secrets or work-confidential text into it.
 - Nix user packages: Neovim, Starship, Herdr, Node.js/npm/npx, ripgrep, fd, fzf, jq, lazygit, yazi, lsd, vivid, bat, delta, tree-sitter, and uv.
 - Terminal/editor style: Cyberdream dark palette, blurred/translucent WezTerm, transparent Neovim, glass-friendly Herdr.
 - CLI theming: Cyberdream Starship, Bat, Delta, LazyGit, Yazi, LSD, and Vivid.
@@ -29,7 +30,7 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 | Editor plugin manager | lazy.nvim | Install and update Neovim plugins. |
 | Theme | Cyberdream | Keep a consistent color palette across the terminal, editor, and CLI tools. |
 | Package and configuration managers | Nix, nix-darwin, Home Manager, Homebrew | Install tools and configure macOS declaratively. |
-| Coding agents | Codex, Claude Code | Provide AI-assisted development workflows. |
+| Coding agents | Codex, Claude Code, Gemini CLI | Provide AI-assisted development workflows and terminal chat. |
 | CLI utilities | Bat, Delta, fd, fzf, jq, LazyGit, LSD, ripgrep, Tree-sitter, uv, Vivid, Yazi | Improve file viewing, search, Git, JSON processing, syntax parsing, Python project management, colors, and navigation. |
 
 ## Shortcut Reference

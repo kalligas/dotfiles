@@ -50,6 +50,7 @@
     brews = [
       "awscli"
       "databricks/tap/databricks"
+      "gemini-cli"
       "gh"
       "kubectl"
       "libpq"
