@@ -123,7 +123,7 @@
      }
  
 +    #[tokio::test]
-+    async fn focused_pane_background_follows_focus_and_preserves_app_colors() {
++    async fn dotfiles_focused_pane_background_follows_focus_and_preserves_app_colors() {
 +        use ratatui::{backend::TestBackend, Terminal};
 +
 +        let mut app = AppState::test_new();
@@ -179,7 +179,7 @@
 +    }
 +
 +    #[tokio::test]
-+    async fn focused_pane_background_rounds_padding_without_resizing_on_focus() {
++    async fn dotfiles_focused_pane_background_rounds_padding_without_resizing_on_focus() {
 +        use ratatui::{backend::TestBackend, Terminal};
 +
 +        let mut app = AppState::test_new();
@@ -267,7 +267,7 @@
 +    }
 +
 +    #[tokio::test]
-+    async fn focused_pane_background_keeps_a_single_pane_transparent() {
++    async fn dotfiles_focused_pane_background_keeps_a_single_pane_transparent() {
 +        use ratatui::{backend::TestBackend, Terminal};
 +
 +        let mut app = AppState::test_new();
@@ -310,7 +310,7 @@
  
      #[test]
 -    fn disabled_pane_borders_make_inner_rect_equal_visual_rect() {
-+    fn focused_pane_background_padding_reserves_space_without_borders() {
++    fn dotfiles_focused_pane_background_padding_reserves_space_without_borders() {
          let mut workspace = Workspace::test_new("test");
          workspace.test_split(ratatui::layout::Direction::Horizontal);
  
@@ -377,7 +377,7 @@
      }
  
      #[tokio::test]
-+    async fn focused_pane_background_retained_updates_match_full_redraws() {
++    async fn dotfiles_focused_pane_background_retained_updates_match_full_redraws() {
 +        let make_server = || {
 +            let (mut server, rx, left) = retained_test_server(b"initial");
 +            let workspace = &mut server.app.state.workspaces[0];

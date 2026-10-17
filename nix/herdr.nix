@@ -1,10 +1,13 @@
 { herdr, lib }:
 
 assert lib.assertMsg (herdr.version == "0.8.2")
-  "Rebase the focused-pane background patch before upgrading Herdr.";
+  "Rebase the Herdr customization patches before upgrading Herdr.";
 
 herdr.overrideAttrs (old: {
-  patches = (old.patches or [ ]) ++ [ ../patches/herdr-focused-pane-background.patch ];
+  patches = (old.patches or [ ]) ++ [
+    ../patches/herdr-focused-pane-background.patch
+    ../patches/herdr-agent-context.patch
+  ];
   doCheck = true;
-  cargoTestFlags = [ "--bin" "herdr" "focused_pane_background" ];
+  cargoTestFlags = [ "--bin" "herdr" "dotfiles_" ];
 })

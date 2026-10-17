@@ -95,7 +95,7 @@ uv run home/.config/wezterm/fonts/generate_corners.py --check
 The Nix package applies `patches/herdr-focused-pane-background.patch` to Herdr
 0.8.2. The package build checks padding, rounded corners, stable terminal sizes
 across focus changes, application colors, single-pane transparency, and terminal
-output updates. The version check in `nix/herdr.nix` requires rebasing the patch
+output updates. The version check in `nix/herdr.nix` requires rebasing the patches
 before a Herdr upgrade.
 
 Build and test the custom package:
@@ -105,3 +105,25 @@ nix build .#herdr --out-link .machine/herdr-focus-result
 ```
 
 Run `./rebuild.sh` to install the custom package through Home Manager.
+
+## Agent Labels and Tabs
+
+The Agents sidebar shows each agent's repository in pale blue, branch in pale
+purple, task title in white, and agent type in gray. Separate rows leave room
+for repository and branch names in the narrow sidebar. The rows and colors live
+in `home/.config/herdr/config.toml` under `[ui.sidebar.agents]`.
+
+The custom package also applies `patches/herdr-agent-context.patch`. The patch
+provides the reserved `$repo` and `$branch` agent tokens from each terminal's
+foreground working directory, with the terminal's directory as a fallback.
+Git discovery runs in the existing background refresh every 1.5 seconds.
+Linked worktrees show the original repository name and the worktree's branch.
+A directory change hides the previous labels until fresh results arrive.
+Directories outside Git repositories omit both labels; a detached HEAD omits
+the branch. Terminal titles remain task labels.
+
+The same patch renders inactive numbered tabs with the normal light foreground
+and removes dimming. Inactive tabs keep the terminal's transparent background.
+The package build checks per-agent identities, branch and directory changes,
+linked worktrees, stale results, configured label colors, and inactive tab
+readability alongside the pane appearance checks.

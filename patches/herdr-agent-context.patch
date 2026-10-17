@@ -1,0 +1,530 @@
+diff --git a/src/app/actions.rs b/src/app/actions.rs
+--- a/src/app/actions.rs
++++ b/src/app/actions.rs
+@@ -2945,6 +2945,7 @@
+                 let _ = cache_updates;
+                 Vec::new()
+             }
++            AppEvent::TerminalGitContextsRefreshed { .. } => Vec::new(),
+             AppEvent::WorktreeAddFinished(_) => Vec::new(),
+             AppEvent::WorktreeRemoveFinished(_) => Vec::new(),
+             AppEvent::TabBarCommandFinished { .. } => Vec::new(),
+diff --git a/src/app/api.rs b/src/app/api.rs
+--- a/src/app/api.rs
++++ b/src/app/api.rs
+@@ -60,6 +60,9 @@
+ 
+     pub(crate) fn handle_internal_event_with_render_impact(&mut self, ev: AppEvent) -> bool {
+         match ev {
++            AppEvent::TerminalGitContextsRefreshed { results } => {
++                self.handle_terminal_git_contexts_refreshed(results)
++            }
+             AppEvent::GitStatusRefreshed {
+                 results,
+                 cache_updates,
+@@ -144,6 +147,11 @@
+             } else {
+                 self.prefix_input_source.restore();
+             }
++            return Vec::new();
++        }
++
++        if let AppEvent::TerminalGitContextsRefreshed { results } = ev {
++            self.handle_terminal_git_contexts_refreshed(results);
+             return Vec::new();
+         }
+ 
+diff --git a/src/app/creation.rs b/src/app/creation.rs
+--- a/src/app/creation.rs
++++ b/src/app/creation.rs
+@@ -462,7 +462,7 @@
+             display_agent: presentation.display_agent,
+             agent_status: pane_agent_status(terminal.state, pane.seen),
+             state_labels: presentation.state_labels,
+-            tokens: terminal.metadata_tokens.values(),
++            tokens: terminal.sidebar_tokens(self.terminal_runtimes.get(&terminal.id)),
+             agent_session: terminal_agent_session_info(terminal),
+             scroll,
+             revision: terminal.revision,
+diff --git a/src/app/git_refresh.rs b/src/app/git_refresh.rs
+--- a/src/app/git_refresh.rs
++++ b/src/app/git_refresh.rs
+@@ -46,8 +46,9 @@
+             || now.saturating_duration_since(self.last_git_repo_discovery_refresh)
+                 >= GIT_REPO_DISCOVERY_REFRESH_INTERVAL;
+         let workspaces = self.workspace_git_refresh_items(refresh_repo_discovery);
+-
+-        if workspaces.is_empty() {
++        let terminals = self.terminal_git_refresh_items();
++
++        if workspaces.is_empty() && terminals.is_empty() {
+             self.last_git_remote_status_refresh = now;
+             self.git_identity_refresh_requested = false;
+             return;
+@@ -65,6 +66,10 @@
+             self.last_git_repo_discovery_refresh = now;
+         }
+         std::thread::spawn(move || {
++            if !terminals.is_empty() {
++                let results = refresh_terminal_git_contexts(terminals);
++                let _ = event_tx.blocking_send(AppEvent::TerminalGitContextsRefreshed { results });
++            }
+             let output =
+                 refresh_workspace_git_statuses_with_cache_and_demand(workspaces, &cache, demand);
+             let _ = event_tx.blocking_send(AppEvent::GitStatusRefreshed {
+@@ -108,7 +113,68 @@
+                 _ => {}
+             }
+         }
++        // Keep refreshing agent context even when Spaces rows omit Git tokens.
++        if self.terminal_git_context_enabled() {
++            demand.branch = true;
++        }
+         demand
++    }
++
++    fn terminal_git_context_enabled(&self) -> bool {
++        std::iter::once(&self.state.sidebar_agents.rows)
++            .chain(self.state.sidebar_agents.rows_by_agent.values())
++            .flatten()
++            .flatten()
++            .any(|token| matches!(token.parts().0,
++                crate::config::AgentSidebarToken::Custom(name) if name == "repo" || name == "branch"))
++    }
++
++    fn terminal_git_refresh_items(&self) -> Vec<(crate::terminal::TerminalId, PathBuf)> {
++        if !self.terminal_git_context_enabled() {
++            return Vec::new();
++        }
++        self.state
++            .terminals
++            .values()
++            .filter(|terminal| {
++                terminal.effective_agent_label().is_some() || terminal.agent_name.is_some()
++            })
++            .map(|terminal| {
++                (
++                    terminal.id.clone(),
++                    terminal.git_context_cwd(self.terminal_runtimes.get(&terminal.id)),
++                )
++            })
++            .collect()
++    }
++
++    pub(super) fn handle_terminal_git_contexts_refreshed(
++        &mut self,
++        results: Vec<(
++            crate::terminal::TerminalId,
++            crate::terminal::state::TerminalGitContext,
++        )>,
++    ) -> bool {
++        let mut changed = false;
++        for (id, context) in results {
++            let Some(terminal) = self.state.terminals.get_mut(&id) else {
++                continue;
++            };
++            // Discard results if the foreground process moved while the worker ran.
++            if terminal.git_context_cwd(self.terminal_runtimes.get(&id)) != context.cwd {
++                continue;
++            }
++            if terminal.git_context.as_ref() != Some(&context) {
++                terminal.git_context = Some(context);
++                terminal.revision = terminal.revision.wrapping_add(1);
++                changed = true;
++            }
++        }
++        if changed {
++            self.render_dirty.request_generic();
++            self.render_notify.notify_one();
++        }
++        changed
+     }
+ 
+     fn workspace_git_refresh_items(
+@@ -133,6 +199,35 @@
+     }
+ }
+ 
++fn refresh_terminal_git_contexts(
++    items: Vec<(crate::terminal::TerminalId, PathBuf)>,
++) -> Vec<(
++    crate::terminal::TerminalId,
++    crate::terminal::state::TerminalGitContext,
++)> {
++    let mut by_cwd = HashMap::new();
++    items
++        .into_iter()
++        .map(|(id, cwd)| {
++            let context = by_cwd
++                .entry(cwd.clone())
++                .or_insert_with(|| {
++                    let space = crate::workspace::git_space_metadata(&cwd);
++                    let branch = space
++                        .as_ref()
++                        .and_then(|space| crate::workspace::git_branch(&space.repo_root));
++                    crate::terminal::state::TerminalGitContext {
++                        cwd,
++                        repo: space.map(|space| space.repo_name),
++                        branch,
++                    }
++                })
++                .clone();
++            (id, context)
++        })
++        .collect()
++}
++
+ fn deduplicate_git_refresh_items(
+     items: Vec<WorkspaceGitRefreshItem>,
+     cache: &HashMap<PathBuf, GitStatusCacheEntry>,
+@@ -203,6 +298,131 @@
+ 
+ #[cfg(test)]
+ mod tests {
++    #[test]
++    fn dotfiles_agent_context_tracks_each_repo_branch_and_cwd() {
++        let root = std::env::temp_dir().join(format!("herdr-agent-context-{}", std::process::id()));
++        let _ = std::fs::remove_dir_all(&root);
++        let alpha = root.join("alpha");
++        let beta = root.join("beta");
++        let outside = root.join("outside");
++        for repo in [&alpha, &beta] {
++            // An unborn Git repository needs no external Git executable.
++            std::fs::create_dir_all(repo.join(".git/objects")).unwrap();
++            std::fs::create_dir_all(repo.join(".git/refs/heads")).unwrap();
++            std::fs::write(repo.join(".git/HEAD"), "ref: refs/heads/main\n").unwrap();
++        }
++        std::fs::create_dir_all(&outside).unwrap();
++        std::fs::create_dir_all(alpha.join("nested")).unwrap();
++        std::fs::write(beta.join(".git/HEAD"), "ref: refs/heads/feature/beta\n").unwrap();
++        let config: crate::config::Config = toml::from_str(
++            "[ui.sidebar.agents]\nrows = [[\"$repo\"], [\"$branch\"], [\"terminal_title_stripped\"]]\n[ui.sidebar.spaces]\nrows = [[\"workspace\"]]\n"
++        ).unwrap();
++        let mut app = test_app(&config);
++        let mut ws = Workspace::test_new("unrelated-workspace");
++        ws.test_add_tab(None);
++        let mut ids = Vec::new();
++        for (i, cwd) in [alpha.join("nested"), beta.clone()].into_iter().enumerate() {
++            let pane = ws.pane_state(ws.tabs[i].root_pane).unwrap();
++            let mut terminal =
++                crate::terminal::TerminalState::new(pane.attached_terminal_id.clone(), cwd);
++            terminal.set_detected_state(
++                Some(crate::detect::Agent::Codex),
++                crate::detect::AgentState::Working,
++            );
++            terminal.set_terminal_title(Some(format!("task-{i}")));
++            ids.push(terminal.id.clone());
++            app.state.terminals.insert(terminal.id.clone(), terminal);
++        }
++        app.state.workspaces.push(ws);
++        assert!(
++            app.git_refresh_demand().branch,
++            "agent tokens alone must demand refresh"
++        );
++        let items = app.terminal_git_refresh_items();
++        assert_eq!(items.len(), 2);
++        let results = refresh_terminal_git_contexts(items);
++        assert!(app.handle_terminal_git_contexts_refreshed(results.clone()));
++        assert!(!app.handle_terminal_git_contexts_refreshed(results));
++        let entries = crate::ui::all_agent_panel_entries(&app.state);
++        assert_eq!(entries[0].tokens["repo"], "alpha");
++        assert_eq!(entries[0].tokens["branch"], "main");
++        assert_eq!(entries[1].tokens["repo"], "beta");
++        assert_eq!(entries[1].tokens["branch"], "feature/beta");
++        assert_eq!(
++            entries[1].terminal_title_stripped.as_deref(),
++            Some("task-1")
++        );
++        assert_eq!(
++            app.pane_info(0, app.state.workspaces[0].tabs[1].root_pane)
++                .unwrap()
++                .tokens["repo"],
++            "beta"
++        );
++
++        // A branch switch must refresh even when the cwd stays unchanged.
++        std::fs::write(beta.join(".git/HEAD"), "ref: refs/heads/review\n").unwrap();
++        let results = refresh_terminal_git_contexts(app.terminal_git_refresh_items());
++        assert!(app.handle_terminal_git_contexts_refreshed(results));
++        assert_eq!(
++            app.state.terminals[&ids[1]].sidebar_tokens(None)["branch"],
++            "review"
++        );
++
++        // Moving to another directory immediately hides stale identity. A result
++        // sampled before the move must not restore it, and non-Git clears it.
++        let stale = refresh_terminal_git_contexts(app.terminal_git_refresh_items());
++        app.state.terminals.get_mut(&ids[1]).unwrap().cwd = outside.clone();
++        assert!(!app.state.terminals[&ids[1]]
++            .sidebar_tokens(None)
++            .contains_key("repo"));
++        assert!(!app.handle_terminal_git_contexts_refreshed(stale));
++        let results = refresh_terminal_git_contexts(app.terminal_git_refresh_items());
++        assert!(app.handle_terminal_git_contexts_refreshed(results));
++        let tokens = app.state.terminals[&ids[1]].sidebar_tokens(None);
++        assert!(!tokens.contains_key("repo"));
++        assert!(!tokens.contains_key("branch"));
++        let _ = std::fs::remove_dir_all(root);
++    }
++
++    #[test]
++    fn dotfiles_agent_context_uses_worktree_repo_and_own_branch() {
++        let root =
++            std::env::temp_dir().join(format!("herdr-agent-worktree-{}", std::process::id()));
++        let _ = std::fs::remove_dir_all(&root);
++        let repo = root.join("project");
++        let worktree = root.join("different-checkout-name");
++        std::fs::create_dir_all(repo.join(".git/worktrees/review")).unwrap();
++        std::fs::create_dir_all(repo.join(".git/objects")).unwrap();
++        std::fs::create_dir_all(repo.join(".git/refs/heads")).unwrap();
++        std::fs::create_dir_all(&worktree).unwrap();
++        let gitdir = repo.join(".git/worktrees/review");
++        std::fs::write(repo.join(".git/HEAD"), "ref: refs/heads/main\n").unwrap();
++        std::fs::write(
++            worktree.join(".git"),
++            format!("gitdir: {}\n", gitdir.display()),
++        )
++        .unwrap();
++        std::fs::write(gitdir.join("commondir"), "../..\n").unwrap();
++        std::fs::write(gitdir.join("HEAD"), "ref: refs/heads/codex/review\n").unwrap();
++        let id = crate::terminal::TerminalId::alloc();
++        let result =
++            refresh_terminal_git_contexts(vec![(id.clone(), worktree.clone()), (id, repo.clone())]);
++        assert_eq!(result[0].1.repo.as_deref(), Some("project"));
++        assert_eq!(result[0].1.branch.as_deref(), Some("codex/review"));
++        assert_eq!(result[1].1.branch.as_deref(), Some("main"));
++        let _ = std::fs::remove_dir_all(root);
++    }
++
++    #[test]
++    fn dotfiles_agent_context_refresh_handles_agent_specific_rows() {
++        let config: crate::config::Config = toml::from_str(
++            "[ui.sidebar.agents]\nrows = [[\"agent\"]]\n[ui.sidebar.agents.rows_by_agent]\nclaude = [[\"$repo\"], [\"$branch\"]]\n[ui.sidebar.spaces]\nrows = [[\"workspace\"]]\n"
++        ).unwrap();
++        let app = test_app(&config);
++        assert!(app.terminal_git_context_enabled());
++        assert!(app.git_refresh_demand().branch);
++    }
++
+     use super::*;
+     use crate::workspace::Workspace;
+ 
+diff --git a/src/events.rs b/src/events.rs
+--- a/src/events.rs
++++ b/src/events.rs
+@@ -147,6 +147,13 @@
+         pane_id: PaneId,
+         cwd: std::path::PathBuf,
+     },
++    /// Background per-terminal Git identities, resolved outside the render loop.
++    TerminalGitContextsRefreshed {
++        results: Vec<(
++            crate::terminal::TerminalId,
++            crate::terminal::state::TerminalGitContext,
++        )>,
++    },
+     /// Background git status refresh completed for workspaces.
+     GitStatusRefreshed {
+         results: Vec<WorkspaceGitStatus>,
+diff --git a/src/terminal/state.rs b/src/terminal/state.rs
+--- a/src/terminal/state.rs
++++ b/src/terminal/state.rs
+@@ -120,6 +120,7 @@
+ pub struct TerminalState {
+     pub id: TerminalId,
+     pub cwd: PathBuf,
++    pub(crate) git_context: Option<TerminalGitContext>,
+     pub detected_agent: Option<Agent>,
+     pub fallback_state: AgentState,
+     fallback_visible_blocker: bool,
+@@ -149,11 +150,52 @@
+     pub pending_agent_resume_plan: Option<crate::agent_resume::AgentResumePlan>,
+ }
+ 
++/// Git identity sampled for this terminal, independently of its workspace.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct TerminalGitContext {
++    pub cwd: PathBuf,
++    pub repo: Option<String>,
++    pub branch: Option<String>,
++}
++
+ impl TerminalState {
++    pub(crate) fn git_context_cwd(
++        &self,
++        runtime: Option<&crate::terminal::TerminalRuntime>,
++    ) -> PathBuf {
++        runtime
++            .and_then(|runtime| runtime.foreground_cwd().or_else(|| runtime.cwd()))
++            .unwrap_or_else(|| self.cwd.clone())
++    }
++
++    pub(crate) fn sidebar_tokens(
++        &self,
++        runtime: Option<&crate::terminal::TerminalRuntime>,
++    ) -> HashMap<String, String> {
++        let mut tokens = self.metadata_tokens.values();
++        // These two tokens are reserved for the sampled terminal Git identity.
++        tokens.remove("repo");
++        tokens.remove("branch");
++        if let Some(context) = self
++            .git_context
++            .as_ref()
++            .filter(|context| context.cwd == self.git_context_cwd(runtime))
++        {
++            if let Some(repo) = &context.repo {
++                tokens.insert("repo".into(), repo.clone());
++            }
++            if let Some(branch) = &context.branch {
++                tokens.insert("branch".into(), branch.clone());
++            }
++        }
++        tokens
++    }
++
+     pub fn new(id: TerminalId, cwd: PathBuf) -> Self {
+         Self {
+             id,
+             cwd,
++            git_context: None,
+             detected_agent: None,
+             fallback_state: AgentState::Unknown,
+             fallback_visible_blocker: false,
+diff --git a/src/ui/sidebar/tokens.rs b/src/ui/sidebar/tokens.rs
+--- a/src/ui/sidebar/tokens.rs
++++ b/src/ui/sidebar/tokens.rs
+@@ -153,6 +153,54 @@
+ 
+ #[cfg(test)]
+ mod tests {
++    #[test]
++    fn dotfiles_agent_context_rows_keep_order_and_distinct_colors() {
++        let config: crate::config::Config = toml::from_str(
++            r##"[ui.sidebar.agents]
++
++row_gap = 1
++rows = [
++  ["state_icon", { token = "$repo", fg = "#8eb7e3", bold = true, dim = false }],
++  [{ token = "$branch", fg = "#c2a9db", dim = false }],
++  [{ token = "terminal_title_stripped", fg = "#ffffff", bold = true, dim = false }],
++  [{ token = "agent", fg = "#b4bfd6", dim = false }],
++]
++
++"##,
++        )
++        .unwrap();
++        let mut entry = entry();
++        entry.tokens.insert("repo".into(), "infrastructure".into());
++        entry.tokens.insert("branch".into(), "main".into());
++        entry.terminal_title_stripped = Some("fix-review".into());
++        let rows = agent_rows(&config.ui.sidebar.agents, &entry, "working");
++        assert_eq!(rows.len(), 4);
++        assert_eq!(
++            rows[0][1].kind,
++            ResolvedTokenKind::Custom("infrastructure".into())
++        );
++        assert_eq!(rows[1][0].kind, ResolvedTokenKind::Custom("main".into()));
++        assert_eq!(
++            rows[2][0].kind,
++            ResolvedTokenKind::TerminalTitle("fix-review".into())
++        );
++        let colors: Vec<_> = [(0, 1), (1, 0), (2, 0)]
++            .into_iter()
++            .map(|(row, token)| {
++                assert_eq!(rows[row][token].style.dim, Some(false));
++                rows[row][token].style.fg.unwrap().ratatui()
++            })
++            .collect();
++        assert_eq!(
++            colors,
++            vec![
++                ratatui::style::Color::Rgb(142, 183, 227),
++                ratatui::style::Color::Rgb(194, 169, 219),
++                ratatui::style::Color::Rgb(255, 255, 255),
++            ]
++        );
++    }
++
+     use super::*;
+     use crate::config::{AgentSidebarToken, SpaceSidebarToken};
+     use crate::detect::AgentState;
+diff --git a/src/ui/sidebar.rs b/src/ui/sidebar.rs
+--- a/src/ui/sidebar.rs
++++ b/src/ui/sidebar.rs
+@@ -160,6 +160,13 @@
+                             .tabs
+                             .get(detail.tab_idx)
+                             .is_some_and(|tab| !tab.is_auto_named());
++                    let tokens = ws
++                        .pane_state(detail.pane_id)
++                        .and_then(|pane| app.terminals.get(&pane.attached_terminal_id))
++                        .map(|terminal| {
++                            terminal.sidebar_tokens(terminal_runtimes.get(&terminal.id))
++                        })
++                        .unwrap_or(detail.tokens);
+                     AgentPanelEntry {
+                         ws_idx,
+                         tab_idx: detail.tab_idx,
+@@ -176,7 +183,7 @@
+                         seen: detail.seen,
+                         last_agent_state_change_seq: detail.last_agent_state_change_seq,
+                         state_labels: detail.state_labels,
+-                        tokens: detail.tokens,
++                        tokens,
+                     }
+                 })
+         })
+diff --git a/src/ui/tabs.rs b/src/ui/tabs.rs
+--- a/src/ui/tabs.rs
++++ b/src/ui/tabs.rs
+@@ -397,11 +397,6 @@
+             } else {
+                 base.add_modifier(Modifier::BOLD)
+             }
+-        } else if tab.is_auto_named() {
+-            Style::default()
+-                .fg(p.overlay0)
+-                .bg(p.surface0)
+-                .add_modifier(Modifier::DIM)
+         } else {
+             Style::default().fg(p.overlay1).bg(p.surface0)
+         };
+@@ -503,6 +498,38 @@
+ 
+ #[cfg(test)]
+ mod tests {
++    #[test]
++    fn dotfiles_inactive_numbered_and_named_tabs_are_readable() {
++        let mut app = AppState::test_new();
++        let mut ws = Workspace::test_new("test");
++        ws.test_add_tab(None);
++        ws.test_add_tab(Some("review"));
++        ws.active_tab = 0;
++        app.workspaces = vec![ws];
++        app.active = Some(0);
++        app.palette = crate::app::state::Palette::terminal();
++        app.palette.overlay0 = ratatui::style::Color::Rgb(60, 64, 72);
++        app.view.tab_bar_rect = Rect::new(0, 0, 40, 1);
++        let view = compute_tab_bar_view(&app.workspaces[0], app.view.tab_bar_rect, 0, true, false);
++        app.view.tab_hit_areas = view.tab_hit_areas;
++        let mut terminal = Terminal::new(TestBackend::new(40, 1)).unwrap();
++        terminal
++            .draw(|frame| render_tab_bar(&app, frame, app.view.tab_bar_rect))
++            .unwrap();
++        let buffer = terminal.backend().buffer();
++        for (idx, expected) in [(1, "2"), (2, "review")] {
++            let rect = app.view.tab_hit_areas[idx];
++            let text = buffer_row_text(buffer, rect, rect.y);
++            assert!(text.contains(expected), "{text:?}");
++            for x in rect.x..rect.x + rect.width {
++                let style = buffer[(x, rect.y)].style();
++                assert_eq!(style.fg, Some(app.palette.overlay1));
++                assert_eq!(style.bg, Some(app.palette.surface0));
++                assert!(!style.add_modifier.contains(Modifier::DIM));
++            }
++        }
++    }
++
+     use super::*;
+     use crate::app::state::AppState;
+     use crate::workspace::Workspace;
