@@ -13,7 +13,7 @@ name = "terminal"
 [theme.custom]
 panel_bg = "reset"
 accent = "#ffffff"
-overlay0 = "#3c4048"
+overlay0 = "#b4bfd6"
 green = "#5eff6c"
 blue = "#5ea1ff"
 red = "#ff6e5e"

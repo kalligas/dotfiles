@@ -106,6 +106,18 @@ nix build .#herdr --out-link .machine/herdr-focus-result
 
 Run `./rebuild.sh` to install the custom package through Home Manager.
 
+## Spaces and Agents
+
+Spaces lists workspaces. A workspace holds tabs and a pane layout. Clicking a
+workspace switches to that layout while the workspace's processes keep running.
+A workspace label can follow a repository name, but each pane can run in a
+different directory. For example, an `infrastructure` workspace can contain
+one agent in Infrastructure and another agent in Data Platform.
+
+Agents lists individual agents across workspaces. Clicking an agent focuses the
+agent's pane. The Agents header control switches between `priority`, which sorts
+agents by attention needed, and `grouped`, which groups agents by workspace.
+
 ## Agent Labels and Tabs
 
 The Agents sidebar shows each agent's repository in pale blue, branch in pale
@@ -127,3 +139,12 @@ and removes dimming. Inactive tabs keep the terminal's transparent background.
 The package build checks per-agent identities, branch and directory changes,
 linked worktrees, stale results, configured label colors, and inactive tab
 readability alongside the pane appearance checks.
+
+The terminal theme's `overlay0` color is pale gray (`#b4bfd6`) so muted sidebar
+headings and controls remain readable over the transparent background. The
+color lives in `home/.config/herdr/config.toml` under `[theme.custom]`. Reload
+appearance changes without restarting panes:
+
+```sh
+herdr --session wiki server reload-config
+```
