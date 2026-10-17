@@ -1,0 +1,102 @@
+diff --git a/src/server/headless.rs b/src/server/headless.rs
+index 98b777a..7f84f6a 100644
+--- a/src/server/headless.rs
++++ b/src/server/headless.rs
+@@ -4316,7 +4316,7 @@ impl HeadlessServer {
+                     if dirty_patch_intersects_hyperlinks(&frame, info.inner_rect, &patch) {
+                         retained_fallback!("hyperlink_intersection");
+                     }
+-                    let background = crate::ui::focused_pane_background(&self.app.state, &info);
++                    let background = crate::ui::focused_pane_background(&info);
+                     if !apply_terminal_dirty_patch(&mut frame, info.inner_rect, patch, background) {
+                         retained_fallback!("patch_apply_failed");
+                     }
+diff --git a/src/ui/panes.rs b/src/ui/panes.rs
+index b929f47..8537067 100644
+--- a/src/ui/panes.rs
++++ b/src/ui/panes.rs
+@@ -345,9 +345,9 @@ pub(super) fn compute_pane_infos(
+ pub(super) const FOCUSED_PANE_BACKGROUND: Color = Color::Indexed(235);
+ 
+ // Keep full redraws and retained terminal updates on the same focus rule.
+-pub(crate) fn focused_pane_background(app: &AppState, info: &PaneInfo) -> Option<Color> {
+-    let workspace = app.active.and_then(|index| app.workspaces.get(index))?;
+-    (info.is_focused && workspace.layout.pane_count() > 1).then_some(FOCUSED_PANE_BACKGROUND)
++// A single pane is shaded too, so every tab shows the same focused surface.
++pub(crate) fn focused_pane_background(info: &PaneInfo) -> Option<Color> {
++    info.is_focused.then_some(FOCUSED_PANE_BACKGROUND)
+ }
+ 
+ // Padding belongs to the pane, so moving focus never resizes a terminal.
+@@ -413,7 +413,7 @@ pub(super) fn render_panes(
+                 && !pane_is_scrolled_back(rt)
+                 && app.pane_exposes_host_cursor(ws_idx, info.id);
+             rt.render(frame, info.inner_rect, show_cursor);
+-            if let Some(background) = focused_pane_background(app, info) {
++            if let Some(background) = focused_pane_background(info) {
+                 render_focused_pane_background(app, frame, info, background);
+             }
+             render_pane_scrollbar(app, frame, info, rt);
+@@ -1218,17 +1218,22 @@ mod tests {
+     }
+ 
+     #[tokio::test]
+-    async fn dotfiles_focused_pane_background_keeps_a_single_pane_transparent() {
++    async fn dotfiles_focused_pane_background_shades_a_single_pane() {
+         use ratatui::{backend::TestBackend, Terminal};
+ 
+         let mut app = AppState::test_new();
+         app.mode = Mode::Terminal;
++        app.pane_borders = false;
+         app.pane_scrollbars = false;
+         let mut workspace = Workspace::test_new("test");
+         let root = workspace.tabs[0].root_pane;
+         workspace.insert_test_runtime(
+             root,
+-            TerminalRuntime::test_with_screen_bytes(6, 2, b"plain"),
++            TerminalRuntime::test_with_screen_bytes(
++                12,
++                6,
++                b"\x1b[48;2;20;40;60mX\x1b[0m plain",
++            ),
+         );
+         app.workspaces = vec![workspace];
+         app.active = Some(0);
+@@ -1237,20 +1242,29 @@ mod tests {
+         let infos = compute_pane_infos(
+             &app,
+             &runtimes,
+-            Rect::new(0, 0, 6, 2),
++            Rect::new(0, 0, 16, 8),
+             false,
+             crate::kitty_graphics::HostCellSize::default(),
+         );
+-        let mut terminal = Terminal::new(TestBackend::new(6, 2)).unwrap();
++        let mut terminal = Terminal::new(TestBackend::new(16, 8)).unwrap();
+         terminal
+             .draw(|frame| render_panes(&app, &runtimes, frame, &infos, &[]))
+             .unwrap();
+-        assert!(terminal
+-            .backend()
+-            .buffer()
+-            .content
+-            .iter()
+-            .all(|cell| cell.bg == Color::Reset));
++        let buffer = terminal.backend().buffer();
++        assert_eq!(buffer[(2, 1)].symbol(), "X");
++        assert_eq!(buffer[(2, 1)].bg, Color::Rgb(20, 40, 60));
++        assert_eq!(buffer[(3, 1)].bg, FOCUSED_PANE_BACKGROUND);
++        assert_eq!(buffer[(1, 0)].bg, FOCUSED_PANE_BACKGROUND);
++        for (x, y, symbol) in [
++            (0, 0, "\u{1fbee}"),
++            (15, 0, "\u{1fbed}"),
++            (0, 7, "\u{1fbec}"),
++            (15, 7, "\u{1fbef}"),
++        ] {
++            assert_eq!(buffer[(x, y)].symbol(), symbol);
++            assert_eq!(buffer[(x, y)].bg, Color::Reset);
++            assert_eq!(buffer[(x, y)].fg, FOCUSED_PANE_BACKGROUND);
++        }
+     }
+ 
+     #[test]

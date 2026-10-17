@@ -77,10 +77,11 @@ content. Panes smaller than eight columns or four rows omit the padding.
 Padding stays the same when focus moves between panes.
 
 The custom Herdr package shades the focused pane's default background with a
-translucent gray when a tab contains multiple panes. Filled corner glyphs round
-the shaded area inside the padding. Application backgrounds and selection colors
-keep their own colors. A tab with one pane keeps the terminal's transparent
-background.
+translucent gray. Filled corner glyphs round the shaded area inside the
+padding. Application backgrounds and selection colors keep their own colors.
+A tab with one pane also shades that pane, so every tab shows the same focused
+surface. The patch `patches/herdr-single-pane-background.patch` extends the
+shading to single-pane tabs.
 
 The translucent near-black is `rgba(0, 9, 17, 0.7)`, so WezTerm's blurred window
 background shows through the focused pane. The WezTerm window background is
@@ -125,7 +126,7 @@ uv run home/.config/wezterm/fonts/generate_corners.py --check
 
 The Nix package applies `patches/herdr-focused-pane-background.patch` to Herdr
 0.8.2. The package build checks padding, rounded corners, stable terminal sizes
-across focus changes, application colors, single-pane transparency, and terminal
+across focus changes, application colors, single-pane shading, and terminal
 output updates. The version check in `nix/herdr.nix` requires rebasing the patches
 before a Herdr upgrade.
 
