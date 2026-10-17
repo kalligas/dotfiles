@@ -35,8 +35,9 @@ hide_tab_bar_when_single_tab = true
 accent = "#ffffff"
 
 agent_panel_sort = "priority"
+show_agent_labels_on_pane_borders = false
 [ui.toast]
-delivery = "terminal"
+delivery = "system"
 delay_seconds = 1
 
 [ui.toast.herdr]
@@ -47,7 +48,7 @@ enabled = true
 position = "bottom-center"
 
 [ui.sound]
-enabled = false
+enabled = true
 
 [ui.sidebar.agents]
 row_gap = 1
