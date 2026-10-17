@@ -26,6 +26,7 @@
     };
 
     dock.autohide = true;
+    dock.minimize-to-application = true;
     finder.FXPreferredViewStyle = "Nlsv";
     finder.CreateDesktop = false;
     trackpad.Clicking = true;
