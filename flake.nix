@@ -4,6 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
     nixpkgs-herdr.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs-codex.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
     nix-darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-26.05";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
@@ -19,6 +20,7 @@
       self,
       nixpkgs,
       nixpkgs-herdr,
+      nixpkgs-codex,
       nix-darwin,
       nix-homebrew,
       home-manager,
@@ -35,6 +37,7 @@
           })
         ];
       };
+      codexPkgs = import nixpkgs-codex { inherit system; };
     in
     {
       packages.${system}.herdr = herdrPkgs.herdr;
@@ -55,7 +58,7 @@
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.extraSpecialArgs = {
-              inherit user herdrPkgs;
+              inherit user herdrPkgs codexPkgs;
             };
             home-manager.users.${user} = import ./home.nix;
           }
