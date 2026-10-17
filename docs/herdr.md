@@ -82,11 +82,11 @@ shaded area inside the padding. Application backgrounds and selection colors
 keep their own colors. A tab with one pane keeps the terminal's transparent
 background.
 
-WezTerm loads the four corner glyphs from
+WezTerm loads the four pane corners and two rounded tab ends from
 `home/.config/wezterm/fonts/HerdrPaneCorners.ttf`. The small font contains
 original outlines with JetBrains Mono's cell metrics. Each curve has equal
 horizontal and vertical radii; the four corners mirror the same circular shape.
-The fallback family is `Herdr Pane Corners Round`. Regenerate or verify the
+The fallback family is `Herdr Rounded UI`. Regenerate or verify the
 font with:
 
 ```sh
@@ -141,6 +141,14 @@ and removes dimming. Inactive tabs keep the terminal's transparent background.
 The package build checks per-agent identities, branch and directory changes,
 linked worktrees, stale results, configured label colors, and inactive tab
 readability alongside the pane appearance checks.
+
+The selected tab uses the same gray (`#24272b`) as the focused pane, with a
+bold light label and circular corners at both ends. The patch
+`patches/herdr-rounded-tabs.patch` places the rounded ends inside the existing
+tab padding. Tab widths, spacing, and mouse targets stay the same. The
+`Herdr Rounded UI` font supplies two end glyphs in Unicode's plane-16 private-use
+area, outside the Nerd Font icon ranges. The package build also checks selected
+and inactive tab styles, selection changes, narrow tabs, and wide labels.
 
 The terminal theme's `overlay0` color is pale gray (`#b4bfd6`) so muted sidebar
 headings and controls remain readable over the transparent background. The

@@ -1,0 +1,223 @@
+diff --git a/src/ui/panes.rs b/src/ui/panes.rs
+--- a/src/ui/panes.rs
++++ b/src/ui/panes.rs
+@@ -340,10 +340,13 @@
+     pane_infos
+ }
+ 
++// Share the selected surface color with the tab strip.
++pub(super) const FOCUSED_PANE_BACKGROUND: Color = Color::Rgb(36, 39, 43);
++
+ // Keep full redraws and retained terminal updates on the same focus rule.
+ pub(crate) fn focused_pane_background(app: &AppState, info: &PaneInfo) -> Option<Color> {
+     let workspace = app.active.and_then(|index| app.workspaces.get(index))?;
+-    (info.is_focused && workspace.layout.pane_count() > 1).then_some(Color::Rgb(36, 39, 43))
++    (info.is_focused && workspace.layout.pane_count() > 1).then_some(FOCUSED_PANE_BACKGROUND)
+ }
+ 
+ // Padding belongs to the pane, so moving focus never resizes a terminal.
+diff --git a/src/ui/tabs.rs b/src/ui/tabs.rs
+--- a/src/ui/tabs.rs
++++ b/src/ui/tabs.rs
+@@ -5,9 +5,14 @@
+     Frame,
+ };
+ 
++use super::panes::FOCUSED_PANE_BACKGROUND;
+ use super::text::display_width_u16;
+ use super::widgets::panel_contrast_fg;
+ use crate::app::AppState;
++
++// Private-use glyphs supplied by the Herdr Rounded UI fallback font.
++const ACTIVE_TAB_LEFT_CAP: &str = "\u{10f000}";
++const ACTIVE_TAB_RIGHT_CAP: &str = "\u{10f001}";
+ 
+ const MIN_TAB_WIDTH: u16 = 8;
+ const NEW_TAB_WIDTH: u16 = 3;
+@@ -382,7 +387,7 @@
+         );
+     }
+ 
+-    for (idx, tab) in ws.tabs.iter().enumerate() {
++    for idx in 0..ws.tabs.len() {
+         let Some(rect) = app.view.tab_hit_areas.get(idx).copied() else {
+             break;
+         };
+@@ -391,16 +396,22 @@
+         }
+         let active = idx == ws.active_tab;
+         let style = if active {
+-            let base = Style::default().fg(panel_contrast_fg(p)).bg(p.accent);
+-            if tab.is_auto_named() {
+-                base
+-            } else {
+-                base.add_modifier(Modifier::BOLD)
+-            }
++            Style::default()
++                .fg(p.overlay1)
++                .bg(FOCUSED_PANE_BACKGROUND)
++                .add_modifier(Modifier::BOLD)
+         } else {
+             Style::default().fg(p.overlay1).bg(p.surface0)
+         };
+-        let width = rect.width as usize;
++        // Caps stay inside the existing padding and click target. Clip the
++        // label inside them so wide characters cannot overwrite either cap.
++        let rounded = active && rect.width >= 3;
++        let label_rect = if rounded {
++            Rect::new(rect.x + 1, rect.y, rect.width - 2, 1)
++        } else {
++            rect
++        };
++        let width = label_rect.width as usize;
+         let name = tab_chrome_label(ws, idx);
+         // Pad by terminal columns, not chars, so wide glyphs stay centered.
+         let padding = width.saturating_sub(display_width_u16(&name) as usize);
+@@ -410,7 +421,16 @@
+             empty = "",
+             right = padding - left
+         );
+-        frame.render_widget(Paragraph::new(text).style(style), rect);
++        frame.render_widget(Paragraph::new(text).style(style), label_rect);
++        if rounded {
++            let cap_style = Style::default().fg(FOCUSED_PANE_BACKGROUND).bg(p.panel_bg);
++            frame.buffer_mut()[(rect.x, rect.y)]
++                .set_symbol(ACTIVE_TAB_LEFT_CAP)
++                .set_style(cap_style);
++            frame.buffer_mut()[(rect.right() - 1, rect.y)]
++                .set_symbol(ACTIVE_TAB_RIGHT_CAP)
++                .set_style(cap_style);
++        }
+     }
+ 
+     if let Some(crate::app::state::DragState {
+@@ -530,6 +550,96 @@
+         }
+     }
+ 
++    #[test]
++    fn dotfiles_active_tabs_round_both_ends_and_follow_selection() {
++        use ratatui::style::Color;
++        for panel_bg in [Color::Reset, Color::Rgb(10, 20, 30)] {
++            for selected in 0..2 {
++                let mut app = AppState::test_new();
++                let mut ws = Workspace::test_new("test");
++                ws.test_add_tab(Some("review"));
++                ws.active_tab = selected;
++                app.workspaces = vec![ws];
++                app.active = Some(0);
++                app.palette = crate::app::state::Palette::terminal();
++                app.palette.panel_bg = panel_bg;
++                app.view.tab_bar_rect = Rect::new(0, 0, 40, 1);
++                let view =
++                    compute_tab_bar_view(&app.workspaces[0], app.view.tab_bar_rect, 0, true, false);
++                app.view.tab_hit_areas = view.tab_hit_areas;
++                let hit_areas = app.view.tab_hit_areas.clone();
++                let mut terminal = Terminal::new(TestBackend::new(40, 1)).unwrap();
++                terminal
++                    .draw(|frame| render_tab_bar(&app, frame, app.view.tab_bar_rect))
++                    .unwrap();
++                assert_eq!(app.view.tab_hit_areas, hit_areas);
++                let buffer = terminal.backend().buffer();
++                for (idx, label) in [(0, "1"), (1, "review")] {
++                    let rect = hit_areas[idx];
++                    assert_eq!(rect.width, tab_width(&app.workspaces[0], idx));
++                    assert!(buffer_row_text(buffer, rect, 0).contains(label));
++                    if idx == selected {
++                        for (x, symbol) in [
++                            (rect.x, ACTIVE_TAB_LEFT_CAP),
++                            (rect.right() - 1, ACTIVE_TAB_RIGHT_CAP),
++                        ] {
++                            let cell = &buffer[(x, 0)];
++                            assert_eq!(cell.symbol(), symbol);
++                            assert_eq!(display_width_u16(symbol), 1);
++                            assert_eq!(cell.fg, FOCUSED_PANE_BACKGROUND);
++                            assert_eq!(cell.bg, panel_bg);
++                            assert!(!cell.modifier.contains(Modifier::BOLD));
++                        }
++                        for x in rect.x + 1..rect.right() - 1 {
++                            let cell = &buffer[(x, 0)];
++                            assert_eq!(cell.bg, FOCUSED_PANE_BACKGROUND);
++                            assert_eq!(cell.fg, app.palette.overlay1);
++                            assert!(cell.modifier.contains(Modifier::BOLD));
++                        }
++                    } else {
++                        for x in rect.x..rect.right() {
++                            let cell = &buffer[(x, 0)];
++                            assert_eq!(cell.bg, app.palette.surface0);
++                            assert_eq!(cell.fg, app.palette.overlay1);
++                            assert!(!cell.modifier.contains(Modifier::DIM));
++                            assert_ne!(cell.symbol(), ACTIVE_TAB_LEFT_CAP);
++                            assert_ne!(cell.symbol(), ACTIVE_TAB_RIGHT_CAP);
++                        }
++                    }
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn dotfiles_active_tabs_clip_wide_labels_inside_caps() {
++        for width in 1..=6 {
++            let mut app = AppState::test_new();
++            let mut ws = Workspace::test_new("test");
++            ws.tabs[0].set_custom_name("提交反馈".into());
++            app.workspaces = vec![ws];
++            app.active = Some(0);
++            app.view.tab_bar_rect = Rect::new(0, 0, 10, 1);
++            let rect = Rect::new(2, 0, width, 1);
++            app.view.tab_hit_areas = vec![rect];
++            let mut terminal = Terminal::new(TestBackend::new(10, 1)).unwrap();
++            let rendered = terminal
++                .draw(|frame| render_tab_bar(&app, frame, app.view.tab_bar_rect))
++                .unwrap();
++            // Inspect the frame: backend diffs skip a wide glyph's trailing cell.
++            let buffer = rendered.buffer;
++            if width >= 3 {
++                assert_eq!(buffer[(rect.x, 0)].symbol(), ACTIVE_TAB_LEFT_CAP);
++                assert_eq!(buffer[(rect.right() - 1, 0)].symbol(), ACTIVE_TAB_RIGHT_CAP);
++            } else {
++                for x in rect.x..rect.right() {
++                    assert_eq!(buffer[(x, 0)].bg, FOCUSED_PANE_BACKGROUND);
++                }
++            }
++            assert_eq!(buffer[(rect.right(), 0)].bg, app.palette.panel_bg);
++        }
++    }
++
+     use super::*;
+     use crate::app::state::AppState;
+     use crate::workspace::Workspace;
+@@ -743,11 +853,14 @@
+         let cell: String = (rect.x..rect.x + rect.width)
+             .map(|x| buffer[(x, rect.y)].symbol())
+             .collect();
+-        assert_eq!(cell, "  omarchy  ");
+-    }
+-
+-    #[test]
+-    fn active_auto_named_tab_keeps_readable_weight() {
++        assert_eq!(
++            cell,
++            format!("{ACTIVE_TAB_LEFT_CAP} omarchy {ACTIVE_TAB_RIGHT_CAP}")
++        );
++    }
++
++    #[test]
++    fn dotfiles_active_auto_named_tab_keeps_readable_weight() {
+         let mut app = AppState::test_new();
+         let ws = Workspace::test_new("test");
+ 
+@@ -766,9 +879,10 @@
+         let tab_rect = app.view.tab_hit_areas[0];
+         let style = terminal.backend().buffer()[(tab_rect.x + 1, tab_rect.y)].style();
+ 
+-        assert_eq!(style.bg, Some(app.palette.accent));
++        assert_eq!(style.bg, Some(FOCUSED_PANE_BACKGROUND));
++        assert_eq!(style.fg, Some(app.palette.overlay1));
+         assert!(!style.add_modifier.contains(Modifier::DIM));
+-        assert!(!style.add_modifier.contains(Modifier::BOLD));
++        assert!(style.add_modifier.contains(Modifier::BOLD));
+     }
+ 
+     #[test]

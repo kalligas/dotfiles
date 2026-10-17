@@ -2,7 +2,7 @@
 # requires-python = ">=3.10"
 # dependencies = ["fonttools==4.67.0"]
 # ///
-"""Generate four filled corner glyphs for Herdr's borderless pane shading.
+"""Generate circular pane corners and tab caps for Herdr's selected surfaces.
 
 Run with: uv run generate_corners.py [--check]
 The outlines are original. Metrics match JetBrains Mono's terminal cells.
@@ -58,6 +58,31 @@ def build_font():
         glyphs[name] = target.glyph()
         cmap[codepoint] = name
 
+    # One-row tabs need both top and bottom curves in each end cell.
+    # Use plane-16 private-use characters to avoid Nerd Font icon ranges.
+    for codepoint, mirror_x in [(0x10F000, False), (0x10F001, True)]:
+        name = f"u{codepoint:X}"
+        target = TTGlyphPen(None)
+        pen = TransformPen(
+            target, (-1 if mirror_x else 1, 0, 0, 1, width if mirror_x else 0, 0)
+        )
+        pen.moveTo((width, bottom))
+        pen.lineTo((width, top))
+        pen.qCurveTo(
+            (radius * 0.585786, top),
+            (radius * 0.292893, curve_bottom + radius * 0.707107),
+        )
+        pen.qCurveTo((0, curve_bottom + radius * 0.414214), (0, curve_bottom))
+        pen.lineTo((0, bottom + radius))
+        pen.qCurveTo(
+            (0, bottom + radius * 0.585786),
+            (radius * 0.292893, bottom + radius * 0.292893),
+        )
+        pen.qCurveTo((radius * 0.585786, bottom), (width, bottom))
+        pen.closePath()
+        glyphs[name] = target.glyph()
+        cmap[codepoint] = name
+
     builder = FontBuilder(1000, isTTF=True)
     builder.setupGlyphOrder(list(glyphs))
     builder.setupCharacterMap(cmap)
@@ -66,12 +91,12 @@ def build_font():
     builder.setupHorizontalHeader(ascent=top, descent=bottom)
     builder.setupNameTable(
         {
-            "familyName": "Herdr Pane Corners Round",
+            "familyName": "Herdr Rounded UI",
             "styleName": "Regular",
-            "uniqueFontIdentifier": "HerdrPaneCornersRound-1.1",
-            "fullName": "Herdr Pane Corners Round Regular",
-            "psName": "HerdrPaneCornersRound-Regular",
-            "version": "Version 1.1",
+            "uniqueFontIdentifier": "HerdrRoundedUI-1.2",
+            "fullName": "Herdr Rounded UI Regular",
+            "psName": "HerdrRoundedUI-Regular",
+            "version": "Version 1.2",
         }
     )
     builder.setupOS2(

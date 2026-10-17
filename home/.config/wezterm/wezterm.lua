@@ -64,7 +64,7 @@ end
 config.font_dirs = { wezterm.config_dir .. "/fonts" }
 config.font = wezterm.font_with_fallback({
 	{ family = "JetBrains Mono", weight = "Bold" },
-	"Herdr Pane Corners Round",
+	"Herdr Rounded UI",
 	"Symbols Nerd Font Mono",
 	"GoMono Nerd Font Mono",
 })
