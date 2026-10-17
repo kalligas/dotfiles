@@ -71,15 +71,32 @@ Mouse selection, pane focus, pane resizing, and sidebar navigation are first-cla
 
 ## Pane Appearance
 
-Herdr uses borderless panes with a blank gap between panes. The custom Herdr
-package shades the focused pane's default background gray (`#24272b`) when a
-tab contains multiple panes. Application backgrounds and selection colors keep
-their own colors. A tab with one pane keeps the terminal's transparent background.
+Herdr uses borderless panes with a blank gap between panes. Each borderless pane
+reserves two columns on each side and one row above and below the terminal
+content. Panes smaller than eight columns or four rows omit the padding.
+Padding stays the same when focus moves between panes.
+
+The custom Herdr package shades the focused pane's default background gray
+(`#24272b`) when a tab contains multiple panes. Filled corner glyphs round the
+shaded area inside the padding. Application backgrounds and selection colors
+keep their own colors. A tab with one pane keeps the terminal's transparent
+background.
+
+WezTerm loads the four corner glyphs from
+`home/.config/wezterm/fonts/HerdrPaneCorners.ttf`. The small font contains
+original outlines with JetBrains Mono's cell metrics. Regenerate or verify the
+font with:
+
+```sh
+uv run home/.config/wezterm/fonts/generate_corners.py
+uv run home/.config/wezterm/fonts/generate_corners.py --check
+```
 
 The Nix package applies `patches/herdr-focused-pane-background.patch` to Herdr
-0.8.2. The package build runs rendering tests for focus changes, application
-colors, single-pane transparency, and terminal output updates. The version check
-in `nix/herdr.nix` requires rebasing the patch before a Herdr upgrade.
+0.8.2. The package build checks padding, rounded corners, stable terminal sizes
+across focus changes, application colors, single-pane transparency, and terminal
+output updates. The version check in `nix/herdr.nix` requires rebasing the patch
+before a Herdr upgrade.
 
 Build and test the custom package:
 

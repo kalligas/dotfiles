@@ -1,6 +1,62 @@
 --- a/src/ui/panes.rs
 +++ b/src/ui/panes.rs
-@@ -338,6 +338,12 @@
+@@ -1,5 +1,5 @@
+ use ratatui::{
+-    layout::Rect,
++    layout::{Margin, Rect},
+     style::{Color, Modifier, Style},
+     text::{Line, Span},
+     widgets::{Block, Borders, Clear, Paragraph},
+@@ -46,8 +46,10 @@
+     )
+ }
+ 
+-pub(crate) fn pane_inner_rect(area: Rect, borders: Borders) -> Rect {
+-    if borders.is_empty() {
++pub(crate) fn pane_inner_rect(area: Rect, borders: Borders, pane_borders: bool) -> Rect {
++    if !pane_borders && area.width >= 8 && area.height >= 4 {
++        area.inner(Margin::new(2, 1))
++    } else if borders.is_empty() {
+         area
+     } else {
+         Block::default().borders(borders).inner(area)
+@@ -213,7 +215,7 @@
+             } else {
+                 Borders::NONE
+             };
+-            let pane_inner = pane_inner_rect(area, borders);
++            let pane_inner = pane_inner_rect(area, borders, app.pane_borders);
+             let inner_rect = terminal_inner_rect(rt, pane_inner, app.pane_scrollbars);
+             if !app.direct_attach_resize_locks.contains(terminal_id) {
+                 rt.resize(
+@@ -233,7 +235,7 @@
+         app.pane_gaps,
+         app.pane_outer_borders,
+     ) {
+-        let pane_inner = pane_inner_rect(info.rect, info.borders);
++        let pane_inner = pane_inner_rect(info.rect, info.borders, app.pane_borders);
+ 
+         if let Some((terminal_id, rt)) = runtime_for_tab_pane(terminal_runtimes, tab, info.id) {
+             let inner_rect = terminal_inner_rect(rt, pane_inner, app.pane_scrollbars);
+@@ -273,7 +275,7 @@
+         } else {
+             Borders::NONE
+         };
+-        let pane_inner = pane_inner_rect(area, borders);
++        let pane_inner = pane_inner_rect(area, borders, app.pane_borders);
+         let mut inner_rect = pane_inner;
+         let mut scrollbar_rect = None;
+         if let Some(rt) = app.runtime_for_pane_in_workspace(terminal_runtimes, ws_idx, focused_id) {
+@@ -310,7 +312,7 @@
+     );
+ 
+     for info in &mut pane_infos {
+-        let pane_inner = pane_inner_rect(info.rect, info.borders);
++        let pane_inner = pane_inner_rect(info.rect, info.borders, app.pane_borders);
+ 
+         let mut inner_rect = pane_inner;
+         let mut scrollbar_rect = None;
+@@ -338,6 +340,51 @@
      pane_infos
  }
  
@@ -10,35 +66,62 @@
 +    (info.is_focused && workspace.layout.pane_count() > 1).then_some(Color::Rgb(36, 39, 43))
 +}
 +
++// Padding belongs to the pane, so moving focus never resizes a terminal.
++fn render_focused_pane_background(
++    app: &AppState,
++    frame: &mut Frame,
++    info: &PaneInfo,
++    background: Color,
++) {
++    let padded = !app.pane_borders && info.rect.width >= 8 && info.rect.height >= 4;
++    let surface = if padded { info.rect } else { info.inner_rect };
++    let area = surface.intersection(frame.area());
++    let buf = frame.buffer_mut();
++    for y in area.y..area.bottom() {
++        for x in area.x..area.right() {
++            // Applications keep explicit colors, including full-screen backgrounds.
++            let cell = &mut buf[(x, y)];
++            if cell.bg == Color::Reset {
++                cell.set_bg(background);
++            }
++        }
++    }
++    if padded {
++        // Filled quarter circles occupy padding, never application content.
++        // The small Herdr Pane Corners font supplies these Unicode 16 glyphs.
++        for (x, y, symbol) in [
++            (surface.x, surface.y, "\u{1fbee}"),
++            (surface.right() - 1, surface.y, "\u{1fbed}"),
++            (surface.x, surface.bottom() - 1, "\u{1fbec}"),
++            (surface.right() - 1, surface.bottom() - 1, "\u{1fbef}"),
++        ] {
++            if x >= area.x && x < area.right() && y >= area.y && y < area.bottom() {
++                buf[(x, y)]
++                    .set_symbol(symbol)
++                    .set_fg(background)
++                    .set_bg(Color::Reset);
++            }
++        }
++    }
++}
++
  pub(super) fn render_panes(
      app: &AppState,
      terminal_runtimes: &TerminalRuntimeRegistry,
-@@ -362,6 +368,19 @@
+@@ -362,6 +409,9 @@
                  && !pane_is_scrolled_back(rt)
                  && app.pane_exposes_host_cursor(ws_idx, info.id);
              rt.render(frame, info.inner_rect, show_cursor);
 +            if let Some(background) = focused_pane_background(app, info) {
-+                // Tint default backgrounds only; applications own explicit colors.
-+                let area = info.inner_rect.intersection(frame.area());
-+                let buf = frame.buffer_mut();
-+                for y in area.y..area.bottom() {
-+                    for x in area.x..area.right() {
-+                        let cell = &mut buf[(x, y)];
-+                        if cell.bg == Color::Reset {
-+                            cell.set_bg(background);
-+                        }
-+                    }
-+                }
++                render_focused_pane_background(app, frame, info, background);
 +            }
              render_pane_scrollbar(app, frame, info, rt);
  
              let should_dim = !info.is_focused && multi_pane && !terminal_active;
-@@ -1017,6 +1036,98 @@
-             &app.view.split_borders,
-             frame,
+@@ -1019,6 +1069,186 @@
          );
-+    }
-+
+     }
+ 
 +    #[tokio::test]
 +    async fn focused_pane_background_follows_focus_and_preserves_app_colors() {
 +        use ratatui::{backend::TestBackend, Terminal};
@@ -96,6 +179,94 @@
 +    }
 +
 +    #[tokio::test]
++    async fn focused_pane_background_rounds_padding_without_resizing_on_focus() {
++        use ratatui::{backend::TestBackend, Terminal};
++
++        let mut app = AppState::test_new();
++        app.mode = Mode::Terminal;
++        app.pane_borders = false;
++        app.pane_gaps = false;
++        app.pane_scrollbars = false;
++        let mut workspace = Workspace::test_new("test");
++        let left = workspace.tabs[0].root_pane;
++        let right = workspace.test_split(ratatui::layout::Direction::Horizontal);
++        for id in [left, right] {
++            workspace.tabs[0].runtimes.insert(
++                id,
++                TerminalRuntime::test_with_screen_bytes(
++                    12,
++                    6,
++                    b"\x1b[48;2;20;40;60mX\x1b[0m plain",
++                ),
++            );
++        }
++        app.workspaces = vec![workspace];
++        app.active = Some(0);
++        app.ensure_test_terminals();
++        let runtimes = TerminalRuntimeRegistry::new();
++        let mut terminal = Terminal::new(TestBackend::new(32, 8)).unwrap();
++        for focused in [left, right] {
++            app.workspaces[0].tabs[0].layout.focus_pane(focused);
++            let infos = compute_pane_infos(
++                &app,
++                &runtimes,
++                Rect::new(0, 0, 32, 8),
++                true,
++                crate::kitty_graphics::HostCellSize::default(),
++            );
++            terminal
++                .draw(|frame| render_panes(&app, &runtimes, frame, &infos, &[]))
++                .unwrap();
++            let buffer = terminal.backend().buffer();
++            for info in &infos {
++                let x = info.rect.x;
++                assert_eq!(info.inner_rect, Rect::new(x + 2, 1, 12, 6));
++                assert_eq!(
++                    app.workspaces[0].tabs[0].runtimes[&info.id].current_size(),
++                    (6, 12)
++                );
++                assert_eq!(buffer[(x + 2, 1)].symbol(), "X");
++                assert_eq!(buffer[(x + 2, 1)].bg, Color::Rgb(20, 40, 60));
++                assert_eq!(buffer[(x, 0)].bg, Color::Reset);
++                if info.id == focused {
++                    for (cx, cy, symbol) in [
++                        (x, 0, "\u{1fbee}"),
++                        (x + 15, 0, "\u{1fbed}"),
++                        (x, 7, "\u{1fbec}"),
++                        (x + 15, 7, "\u{1fbef}"),
++                    ] {
++                        assert_eq!(buffer[(cx, cy)].symbol(), symbol);
++                        assert_eq!(buffer[(cx, cy)].bg, Color::Reset);
++                        assert_eq!(buffer[(cx, cy)].fg, Color::Rgb(36, 39, 43));
++                    }
++                    assert_eq!(buffer[(x + 1, 0)].bg, Color::Rgb(36, 39, 43));
++                } else {
++                    assert_eq!(buffer[(x, 0)].symbol(), " ");
++                    assert_eq!(buffer[(x + 1, 0)].bg, Color::Reset);
++                }
++            }
++            // Background tabs and visible tabs must give PTYs identical geometry.
++            resize_tab_panes(
++                &app,
++                &runtimes,
++                &app.workspaces[0].tabs[0],
++                Rect::new(0, 0, 32, 8),
++                crate::kitty_graphics::HostCellSize::default(),
++            );
++            for id in [left, right] {
++                assert_eq!(
++                    app.workspaces[0].tabs[0].runtimes[&id].current_size(),
++                    (6, 12)
++                );
++            }
++        }
++        for (width, height) in [(1, 1), (7, 8), (12, 3)] {
++            let area = Rect::new(0, 0, width, height);
++            assert_eq!(pane_inner_rect(area, Borders::NONE, false), area);
++        }
++    }
++
++    #[tokio::test]
 +    async fn focused_pane_background_keeps_a_single_pane_transparent() {
 +        use ratatui::{backend::TestBackend, Terminal};
 +
@@ -129,9 +300,32 @@
 +            .content
 +            .iter()
 +            .all(|cell| cell.bg == Color::Reset));
++    }
++
+     #[test]
+     fn pane_border_title_trims_and_truncates() {
+         assert_eq!(
+@@ -1188,7 +1418,7 @@
      }
  
      #[test]
+-    fn disabled_pane_borders_make_inner_rect_equal_visual_rect() {
++    fn focused_pane_background_padding_reserves_space_without_borders() {
+         let mut workspace = Workspace::test_new("test");
+         workspace.test_split(ratatui::layout::Direction::Horizontal);
+ 
+@@ -1201,7 +1431,10 @@
+ 
+         for info in infos {
+             assert!(info.borders.is_empty());
+-            assert_eq!(pane_inner_rect(info.rect, info.borders), info.rect);
++            assert_eq!(
++                pane_inner_rect(info.rect, info.borders, false),
++                info.rect.inner(Margin::new(2, 1))
++            );
+         }
+     }
+ 
 --- a/src/ui.rs
 +++ b/src/ui.rs
 @@ -39,7 +39,7 @@
@@ -236,3 +430,14 @@
      async fn retained_pty_update_matches_full_render_frame() {
          let initial = b"\x1b[6 qleft \xe4\xb8\xad";
          let update = b"\r\x1b[44mZ\x1b[0m";
+--- a/src/app/agent_resume.rs
++++ b/src/app/agent_resume.rs
+@@ -301,7 +301,7 @@
+     )
+     .into_iter()
+     .map(|mut info| {
+-        let pane_inner = crate::ui::pane_inner_rect(info.rect, info.borders);
++        let pane_inner = crate::ui::pane_inner_rect(info.rect, info.borders, pane_borders);
+         info.inner_rect = stable_terminal_inner_rect(pane_inner);
+         info
+     })

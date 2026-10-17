@@ -61,8 +61,10 @@ elseif is_macos then
 	config.macos_window_background_blur = 30
 end
 
+config.font_dirs = { wezterm.config_dir .. "/fonts" }
 config.font = wezterm.font_with_fallback({
 	{ family = "JetBrains Mono", weight = "Bold" },
+	"Herdr Pane Corners",
 	"Symbols Nerd Font Mono",
 	"GoMono Nerd Font Mono",
 })
