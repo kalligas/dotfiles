@@ -155,4 +155,14 @@ in
   home.file.".config/treehouse" = forceLink ".config/treehouse";
   home.file.".local/bin/kb".source = link ".local/bin/kb";
   home.file.".local/bin/tokcost".source = link ".local/bin/tokcost";
+  home.file."Library/Services/Minimize All Windows.workflow" =
+    forceLink "Library/Services/Minimize All Windows.workflow";
+
+  home.activation.minimizeAllWindowsShortcut =
+    lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+      /usr/bin/defaults write pbs NSServicesStatus -dict-add \
+        '"(null) - Minimize All Windows - runWorkflowAsService"' \
+        '{key_equivalent = "^~@m"; enabled_context_menu = 1; enabled_services_menu = 1;}'
+      /System/Library/CoreServices/pbs -update
+    '';
 }

@@ -34,6 +34,20 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 
 ## Shortcut Reference
 
+### macOS windows
+
+`Ctrl-Option-Command-M` runs **Minimize All Windows**, an Automator Quick Action
+that minimizes windows across running apps into the Dock. Opening one app leaves
+the other apps' windows minimized. Full-screen windows and windows that do not
+support minimization are skipped.
+
+Home Manager installs the Quick Action and assigns the shortcut during a rebuild.
+The shortcut also appears under **System Settings > Keyboard > Keyboard Shortcuts >
+Services > General**. macOS may ask for Automation access to System Events and
+Accessibility access for the app running the Quick Action. Grant the requested
+access in **System Settings > Privacy & Security** so the Quick Action can
+minimize other apps' windows.
+
 The shortcuts have three layers:
 
 | Prefix | Owner | Use it for |
