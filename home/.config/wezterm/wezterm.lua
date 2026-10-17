@@ -26,10 +26,13 @@ config.window_padding = {
 
 local colors = require("cyberdream")
 
+-- A lighter window background lets Herdr's near-black selected surfaces stand out.
+colors.background = "#000000"
+
 -- Herdr paints its focused pane, selected tab, and active sidebar entry with
 -- palette index 235. Escape sequences carry no alpha, so the translucency
 -- lives here. Keep it equal to SURFACE_RGBA in fonts/generate_corners.py.
-colors.indexed[235] = "rgba(78, 84, 94, 0.25)"
+colors.indexed[235] = "rgba(0, 9, 17, 0.7)"
 
 colors.tab_bar = {
 	background = tab_bar_bg,
@@ -57,7 +60,7 @@ colors.tab_bar = {
 }
 
 config.colors = colors
-config.window_background_opacity = 0.80
+config.window_background_opacity = 0.70
 
 if is_windows then
 	config.win32_system_backdrop = "Acrylic"

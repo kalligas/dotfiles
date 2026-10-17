@@ -82,14 +82,26 @@ the shaded area inside the padding. Application backgrounds and selection colors
 keep their own colors. A tab with one pane keeps the terminal's transparent
 background.
 
-The translucent gray is `rgba(78, 84, 94, 0.25)`, so WezTerm's blurred window
-background shows through the focused pane. Terminal escape sequences carry no
+The translucent near-black is `rgba(6, 7, 8, 0.7)`, so WezTerm's blurred window
+background shows through the focused pane. The WezTerm window background is
+`#32363b` at 0.70 opacity, lighter than the selected surfaces, so the focused
+pane, selected tab, and active sidebar entry read darker than the rest of the
+window. Terminal escape sequences carry no
 alpha, so Herdr paints the surface with palette index 235, and
 `home/.config/wezterm/wezterm.lua` maps index 235 to the translucent gray.
 WezTerm also ignores alpha in ordinary glyph colors, so the corner glyphs carry
 the same gray as a color-font layer. `SURFACE_RGBA` in
 `home/.config/wezterm/fonts/generate_corners.py` must match the index 235
-entry. Applications that use palette index 235 as a background also become
+entry. FreeType premultiplies color-glyph pixels, and WezTerm blends them as
+unpremultiplied, so the generator stores each channel divided by alpha. For
+that reason no color channel may exceed the alpha: at alpha 0.25 (64 of 255),
+each channel stays at or below 63. WezTerm also crops color-glyph bitmaps one
+column and one row short and scales the glyph's top offset by the cropped
+height. Each corner glyph therefore carries a throwaway pixel to the right of
+the cell and far below the baseline: the crop removes that pixel instead of
+the corner's edge, and the tall bitmap keeps the top offset error below
+0.05 px. The outlines cover WezTerm's 26 px above and 8 px below the baseline
+at 25 px per em, so the corners meet the fill without a gap. Applications that use palette index 235 as a background also become
 translucent. A running WezTerm keeps its loaded copy of the font after the file
 changes, so restart WezTerm after regenerating the font.
 

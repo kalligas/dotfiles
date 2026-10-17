@@ -19,11 +19,40 @@ from fontTools.pens.ttGlyphPen import TTGlyphPen
 # WezTerm drops the alpha of a text color, so each glyph carries the
 # translucent surface gray as a color layer. Keep it equal to palette index
 # 235 in wezterm.lua, which fills the rest of each selected surface.
-SURFACE_RGBA = (78, 84, 94, 64)
+SURFACE_RGBA = (6, 7, 8, 179)
+# Far enough below the cell that the crop error stays under 0.05 px.
+CROP_PIXEL_Y = -30000
+
+
+def surface_layer_color():
+    # FreeType premultiplies color glyphs and WezTerm blends them as straight
+    # alpha. Dividing by alpha cancels the extra multiply, so no channel may
+    # exceed alpha.
+    *rgb, alpha = SURFACE_RGBA
+    if max(rgb) > alpha:
+        raise ValueError("SURFACE_RGBA channels must not exceed its alpha")
+    return tuple(channel / alpha for channel in rgb) + (alpha / 255,)
+
+
+def add_crop_pixel(pen, width):
+    # WezTerm crops color glyphs one column and one row short. A throwaway
+    # pixel right of the cell and far below it absorbs that crop. The tall
+    # bitmap also shrinks WezTerm's matching top-offset error to a fraction
+    # of a pixel.
+    x, y, size = width, CROP_PIXEL_Y, 40
+    pen.moveTo((x, y))
+    pen.lineTo((x, y + size))
+    pen.lineTo((x + size, y + size))
+    pen.lineTo((x + size, y))
+    pen.closePath()
 
 
 def build_font():
-    width, top, bottom = 600, 1020, -300
+    width = 600
+    # Cell metrics stay JetBrains Mono's. Outlines cover WezTerm's rounded
+    # cell, which is 26 px above and 8 px below the baseline at 25 px per em.
+    metric_top, metric_bottom = 1020, -300
+    top, bottom = 1040, -320
     radius = width
     curve_bottom = top - radius
     # Mirror one circular corner into all four positions. Keep equal radii
@@ -60,6 +89,7 @@ def build_font():
         )
         pen.qCurveTo((radius * 0.585786, top), (radius, top))
         pen.closePath()
+        add_crop_pixel(target, width)
         glyphs[name] = target.glyph()
         cmap[codepoint] = name
 
@@ -85,6 +115,7 @@ def build_font():
         )
         pen.qCurveTo((radius * 0.585786, bottom), (width, bottom))
         pen.closePath()
+        add_crop_pixel(target, width)
         glyphs[name] = target.glyph()
         cmap[codepoint] = name
 
@@ -100,23 +131,23 @@ def build_font():
     builder.setupGlyf(glyphs)
     builder.setupHorizontalMetrics({name: (width, 0) for name in glyphs})
     builder.setupCOLR(layers, version=0)
-    builder.setupCPAL([[tuple(channel / 255 for channel in SURFACE_RGBA)]])
-    builder.setupHorizontalHeader(ascent=top, descent=bottom)
+    builder.setupCPAL([[surface_layer_color()]])
+    builder.setupHorizontalHeader(ascent=metric_top, descent=metric_bottom)
     builder.setupNameTable(
         {
             "familyName": "Herdr Rounded UI",
             "styleName": "Regular",
-            "uniqueFontIdentifier": "HerdrRoundedUI-1.3",
+            "uniqueFontIdentifier": "HerdrRoundedUI-1.6",
             "fullName": "Herdr Rounded UI Regular",
             "psName": "HerdrRoundedUI-Regular",
-            "version": "Version 1.3",
+            "version": "Version 1.6",
         }
     )
     builder.setupOS2(
-        sTypoAscender=top,
-        sTypoDescender=bottom,
-        usWinAscent=top,
-        usWinDescent=-bottom,
+        sTypoAscender=metric_top,
+        sTypoDescender=metric_bottom,
+        usWinAscent=metric_top,
+        usWinDescent=-metric_bottom,
         sxHeight=550,
         sCapHeight=730,
     )
