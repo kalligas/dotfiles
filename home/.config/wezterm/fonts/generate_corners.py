@@ -19,8 +19,10 @@ from fontTools.pens.ttGlyphPen import TTGlyphPen
 
 def build_font():
     width, top, bottom = 600, 1020, -300
-    height = top - bottom
-    # Unicode 16: justified filled quarter circles, reflected from the top left.
+    radius = width
+    curve_bottom = top - radius
+    # Mirror one circular corner into all four positions. Keep equal radii
+    # even though the terminal cell is much taller than it is wide.
     corners = {
         0x1FBEE: (False, False),
         0x1FBED: (True, False),
@@ -45,12 +47,13 @@ def build_font():
         )
         pen.moveTo((width, bottom))
         pen.lineTo((0, bottom))
-        # Two quadratic segments approximate a quarter ellipse.
+        pen.lineTo((0, curve_bottom))
+        # Two quadratic segments approximate a quarter circle.
         pen.qCurveTo(
-            (0, bottom + height * 0.414214),
-            (width * 0.292893, bottom + height * 0.707107),
+            (0, curve_bottom + radius * 0.414214),
+            (radius * 0.292893, curve_bottom + radius * 0.707107),
         )
-        pen.qCurveTo((width * 0.585786, top), (width, top))
+        pen.qCurveTo((radius * 0.585786, top), (radius, top))
         pen.closePath()
         glyphs[name] = target.glyph()
         cmap[codepoint] = name
@@ -63,12 +66,12 @@ def build_font():
     builder.setupHorizontalHeader(ascent=top, descent=bottom)
     builder.setupNameTable(
         {
-            "familyName": "Herdr Pane Corners",
+            "familyName": "Herdr Pane Corners Round",
             "styleName": "Regular",
-            "uniqueFontIdentifier": "HerdrPaneCorners-1.0",
-            "fullName": "Herdr Pane Corners Regular",
-            "psName": "HerdrPaneCorners-Regular",
-            "version": "Version 1.0",
+            "uniqueFontIdentifier": "HerdrPaneCornersRound-1.1",
+            "fullName": "Herdr Pane Corners Round Regular",
+            "psName": "HerdrPaneCornersRound-Regular",
+            "version": "Version 1.1",
         }
     )
     builder.setupOS2(

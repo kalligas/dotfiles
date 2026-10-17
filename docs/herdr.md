@@ -84,7 +84,9 @@ background.
 
 WezTerm loads the four corner glyphs from
 `home/.config/wezterm/fonts/HerdrPaneCorners.ttf`. The small font contains
-original outlines with JetBrains Mono's cell metrics. Regenerate or verify the
+original outlines with JetBrains Mono's cell metrics. Each curve has equal
+horizontal and vertical radii; the four corners mirror the same circular shape.
+The fallback family is `Herdr Pane Corners Round`. Regenerate or verify the
 font with:
 
 ```sh
