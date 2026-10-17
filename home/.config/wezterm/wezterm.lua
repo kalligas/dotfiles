@@ -27,7 +27,7 @@ config.window_padding = {
 local colors = require("cyberdream")
 
 -- A lighter window background lets Herdr's near-black selected surfaces stand out.
-colors.background = "#1a1a1a"
+colors.background = "#272727"
 
 -- Herdr paints its focused pane, selected tab, and active sidebar entry with
 -- palette index 235. Escape sequences carry no alpha, so the translucency
@@ -60,7 +60,7 @@ colors.tab_bar = {
 }
 
 config.colors = colors
-config.window_background_opacity = 0.70
+config.window_background_opacity = 0.80
 
 if is_windows then
 	config.win32_system_backdrop = "Acrylic"
