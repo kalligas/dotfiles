@@ -76,11 +76,28 @@ reserves two columns on each side and one row above and below the terminal
 content. Panes smaller than eight columns or four rows omit the padding.
 Padding stays the same when focus moves between panes.
 
-The custom Herdr package shades the focused pane's default background gray
-(`#24272b`) when a tab contains multiple panes. Filled corner glyphs round the
-shaded area inside the padding. Application backgrounds and selection colors
+The custom Herdr package shades the focused pane's default background with a
+translucent gray when a tab contains multiple panes. Filled corner glyphs round
+the shaded area inside the padding. Application backgrounds and selection colors
 keep their own colors. A tab with one pane keeps the terminal's transparent
 background.
+
+The translucent gray is `rgba(78, 84, 94, 0.25)`, so WezTerm's blurred window
+background shows through the focused pane. Terminal escape sequences carry no
+alpha, so Herdr paints the surface with palette index 235, and
+`home/.config/wezterm/wezterm.lua` maps index 235 to the translucent gray.
+WezTerm also ignores alpha in ordinary glyph colors, so the corner glyphs carry
+the same gray as a color-font layer. `SURFACE_RGBA` in
+`home/.config/wezterm/fonts/generate_corners.py` must match the index 235
+entry. Applications that use palette index 235 as a background also become
+translucent. A running WezTerm keeps its loaded copy of the font after the file
+changes, so restart WezTerm after regenerating the font.
+
+When the tab bar is visible, a blank row separates the tab bar from the panes.
+The blank row keeps the selected tab from touching the shaded pane. The patch
+`patches/herdr-tab-bar-gap.patch` adds the row, and
+`patches/herdr-translucent-surfaces.patch` switches the surfaces to palette
+index 235.
 
 WezTerm loads the four pane corners and two rounded tab ends from
 `home/.config/wezterm/fonts/HerdrPaneCorners.ttf`. The small font contains
@@ -142,7 +159,7 @@ The package build checks per-agent identities, branch and directory changes,
 linked worktrees, stale results, configured label colors, and inactive tab
 readability alongside the pane appearance checks.
 
-The selected tab uses the same gray (`#24272b`) as the focused pane, with a
+The selected tab uses the same translucent gray as the focused pane, with a
 bold light label and circular corners at both ends. The patch
 `patches/herdr-rounded-tabs.patch` places the rounded ends inside the existing
 tab padding. Tab widths, spacing, and mouse targets stay the same. The

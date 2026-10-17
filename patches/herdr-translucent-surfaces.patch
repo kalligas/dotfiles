@@ -1,0 +1,37 @@
+diff --git a/src/ui/panes.rs b/src/ui/panes.rs
+index 4e8fd2b..b929f47 100644
+--- a/src/ui/panes.rs
++++ b/src/ui/panes.rs
+@@ -340,8 +340,9 @@ pub(super) fn compute_pane_infos(
+     pane_infos
+ }
+ 
+-// Share the selected surface color with the tab strip.
+-pub(super) const FOCUSED_PANE_BACKGROUND: Color = Color::Rgb(36, 39, 43);
++// Share the selected surface color with the tab strip. Escape sequences carry
++// no alpha, so WezTerm maps this palette index to a translucent gray.
++pub(super) const FOCUSED_PANE_BACKGROUND: Color = Color::Indexed(235);
+ 
+ // Keep full redraws and retained terminal updates on the same focus rule.
+ pub(crate) fn focused_pane_background(app: &AppState, info: &PaneInfo) -> Option<Color> {
+@@ -1118,7 +1119,7 @@ mod tests {
+                 assert_eq!(buffer[(x, 0)].fg, Color::Rgb(200, 210, 220));
+                 assert_eq!(buffer[(x, 0)].symbol(), "X");
+                 let expected = if info.id == focused {
+-                    Color::Rgb(36, 39, 43)
++                    FOCUSED_PANE_BACKGROUND
+                 } else {
+                     Color::Reset
+                 };
+@@ -1187,9 +1188,9 @@ mod tests {
+                     ] {
+                         assert_eq!(buffer[(cx, cy)].symbol(), symbol);
+                         assert_eq!(buffer[(cx, cy)].bg, Color::Reset);
+-                        assert_eq!(buffer[(cx, cy)].fg, Color::Rgb(36, 39, 43));
++                        assert_eq!(buffer[(cx, cy)].fg, FOCUSED_PANE_BACKGROUND);
+                     }
+-                    assert_eq!(buffer[(x + 1, 0)].bg, Color::Rgb(36, 39, 43));
++                    assert_eq!(buffer[(x + 1, 0)].bg, FOCUSED_PANE_BACKGROUND);
+                 } else {
+                     assert_eq!(buffer[(x, 0)].symbol(), " ");
+                     assert_eq!(buffer[(x + 1, 0)].bg, Color::Reset);

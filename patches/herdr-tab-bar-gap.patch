@@ -1,0 +1,97 @@
+diff --git a/src/ui.rs b/src/ui.rs
+index 409fcd3..8f3bdff 100644
+--- a/src/ui.rs
++++ b/src/ui.rs
+@@ -196,14 +196,25 @@ fn desktop_tab_bar_and_terminal_area(
+     let hide_single_tab_bar = app.hide_tab_bar_when_single_tab && ws.tabs.len() == 1;
+     if !hide_single_tab_bar && main_area.height > 1 {
+         match app.tab_bar_position {
++            // A blank row keeps the selected tab apart from the shaded pane.
+             crate::config::TabBarPositionConfig::Top => {
+-                let [tab_bar_rect, terminal_area] =
+-                    Layout::vertical([Constraint::Length(1), Constraint::Min(1)]).areas(main_area);
++                let gap = u16::from(main_area.height > 2);
++                let [tab_bar_rect, _, terminal_area] = Layout::vertical([
++                    Constraint::Length(1),
++                    Constraint::Length(gap),
++                    Constraint::Min(1),
++                ])
++                .areas(main_area);
+                 (tab_bar_rect, terminal_area)
+             }
+             crate::config::TabBarPositionConfig::Bottom => {
+-                let [terminal_area, tab_bar_rect] =
+-                    Layout::vertical([Constraint::Min(1), Constraint::Length(1)]).areas(main_area);
++                let gap = u16::from(main_area.height > 2);
++                let [terminal_area, _, tab_bar_rect] = Layout::vertical([
++                    Constraint::Min(1),
++                    Constraint::Length(gap),
++                    Constraint::Length(1),
++                ])
++                .areas(main_area);
+                 (tab_bar_rect, terminal_area)
+             }
+         }
+@@ -812,7 +823,7 @@ mod tests {
+     }
+ 
+     #[test]
+-    fn desktop_tab_bar_position_controls_geometry_and_mode_bar_placement() {
++    fn dotfiles_desktop_tab_bar_position_controls_geometry_and_mode_bar_placement() {
+         let mut app = crate::app::state::AppState::test_new();
+         app.workspaces = vec![Workspace::test_new("one")];
+         app.active = Some(0);
+@@ -821,11 +832,11 @@ mod tests {
+ 
+         compute_view(&mut app, Rect::new(0, 0, 80, 20));
+         assert_eq!(app.view.tab_bar_rect, Rect::new(26, 0, 54, 1));
+-        assert_eq!(app.view.terminal_area, Rect::new(26, 1, 54, 19));
++        assert_eq!(app.view.terminal_area, Rect::new(26, 2, 54, 18));
+ 
+         app.tab_bar_position = crate::config::TabBarPositionConfig::Bottom;
+         compute_view(&mut app, Rect::new(0, 0, 80, 20));
+-        assert_eq!(app.view.terminal_area, Rect::new(26, 0, 54, 19));
++        assert_eq!(app.view.terminal_area, Rect::new(26, 0, 54, 18));
+         assert_eq!(app.view.tab_bar_rect, Rect::new(26, 19, 54, 1));
+         assert!(app.view.tab_hit_areas.iter().all(|rect| rect.y == 19));
+         assert_eq!(app.view.new_tab_hit_area.y, 19);
+@@ -841,7 +852,7 @@ mod tests {
+     }
+ 
+     #[test]
+-    fn hide_tab_bar_when_single_tab_toggles_geometry_with_tab_count() {
++    fn dotfiles_hide_tab_bar_when_single_tab_toggles_geometry_with_tab_count() {
+         let mut app = crate::app::state::AppState::test_new();
+         app.hide_tab_bar_when_single_tab = true;
+         app.workspaces = vec![Workspace::test_new("one")];
+@@ -860,7 +871,7 @@ mod tests {
+         compute_view(&mut app, Rect::new(0, 0, 80, 20));
+ 
+         assert_eq!(app.view.tab_bar_rect, Rect::new(26, 0, 54, 1));
+-        assert_eq!(app.view.terminal_area, Rect::new(26, 1, 54, 19));
++        assert_eq!(app.view.terminal_area, Rect::new(26, 2, 54, 18));
+         assert_eq!(app.view.tab_hit_areas.len(), 2);
+         assert!(app.view.tab_hit_areas.iter().all(|rect| rect.width > 0));
+         assert!(app.view.new_tab_hit_area.width > 0);
+@@ -1044,7 +1055,7 @@ mod tests {
+ 
+         assert_eq!(app.view.sidebar_rect, Rect::new(0, 0, 0, 20));
+         assert_eq!(app.view.tab_bar_rect, Rect::new(0, 0, 80, 1));
+-        assert_eq!(app.view.terminal_area, Rect::new(0, 1, 80, 19));
++        assert_eq!(app.view.terminal_area, Rect::new(0, 2, 80, 18));
+         assert!(app.view.workspace_card_areas.is_empty());
+ 
+         let backend = TestBackend::new(80, 20);
+diff --git a/src/ui/tab_surface.rs b/src/ui/tab_surface.rs
+index 99ca972..faaa4ec 100644
+--- a/src/ui/tab_surface.rs
++++ b/src/ui/tab_surface.rs
+@@ -297,7 +297,7 @@ mod tests {
+         assert_eq!((frame.width, frame.height), (106, 20));
+         assert_eq!(app.view.sidebar_rect, Rect::new(0, 0, 26, 20));
+         assert_eq!(app.view.tab_bar_rect, Rect::new(26, 0, 80, 1));
+-        assert_eq!(app.view.terminal_area, Rect::new(26, 1, 80, 19));
++        assert_eq!(app.view.terminal_area, Rect::new(26, 2, 80, 18));
+         assert_eq!(app.view.pane_infos.len(), 2);
+         assert!(!app.view.split_borders.is_empty());
+         assert!(frame.cursor.is_some());

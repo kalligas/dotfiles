@@ -9,6 +9,8 @@ herdr.overrideAttrs (old: {
     ../patches/herdr-agent-context.patch
     ../patches/herdr-rounded-tabs.patch
     ../patches/herdr-rounded-sidebar.patch
+    ../patches/herdr-tab-bar-gap.patch
+    ../patches/herdr-translucent-surfaces.patch
   ];
   doCheck = true;
   cargoTestFlags = [ "--bin" "herdr" "dotfiles_" ];

@@ -26,6 +26,11 @@ config.window_padding = {
 
 local colors = require("cyberdream")
 
+-- Herdr paints its focused pane, selected tab, and active sidebar entry with
+-- palette index 235. Escape sequences carry no alpha, so the translucency
+-- lives here. Keep it equal to SURFACE_RGBA in fonts/generate_corners.py.
+colors.indexed[235] = "rgba(78, 84, 94, 0.25)"
+
 colors.tab_bar = {
 	background = tab_bar_bg,
 	active_tab = {

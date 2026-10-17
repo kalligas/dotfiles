@@ -16,6 +16,11 @@ from fontTools.fontBuilder import FontBuilder
 from fontTools.pens.transformPen import TransformPen
 from fontTools.pens.ttGlyphPen import TTGlyphPen
 
+# WezTerm drops the alpha of a text color, so each glyph carries the
+# translucent surface gray as a color layer. Keep it equal to palette index
+# 235 in wezterm.lua, which fills the rest of each selected surface.
+SURFACE_RGBA = (78, 84, 94, 64)
+
 
 def build_font():
     width, top, bottom = 600, 1020, -300
@@ -83,20 +88,28 @@ def build_font():
         glyphs[name] = target.glyph()
         cmap[codepoint] = name
 
+    # Each mapped glyph paints an identical outline layer in the surface gray.
+    layers = {}
+    for name in cmap.values():
+        glyphs[f"{name}.fill"] = glyphs[name]
+        layers[name] = [(f"{name}.fill", 0)]
+
     builder = FontBuilder(1000, isTTF=True)
     builder.setupGlyphOrder(list(glyphs))
     builder.setupCharacterMap(cmap)
     builder.setupGlyf(glyphs)
     builder.setupHorizontalMetrics({name: (width, 0) for name in glyphs})
+    builder.setupCOLR(layers, version=0)
+    builder.setupCPAL([[tuple(channel / 255 for channel in SURFACE_RGBA)]])
     builder.setupHorizontalHeader(ascent=top, descent=bottom)
     builder.setupNameTable(
         {
             "familyName": "Herdr Rounded UI",
             "styleName": "Regular",
-            "uniqueFontIdentifier": "HerdrRoundedUI-1.2",
+            "uniqueFontIdentifier": "HerdrRoundedUI-1.3",
             "fullName": "Herdr Rounded UI Regular",
             "psName": "HerdrRoundedUI-Regular",
-            "version": "Version 1.2",
+            "version": "Version 1.3",
         }
     )
     builder.setupOS2(
