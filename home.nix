@@ -160,9 +160,11 @@ in
 
   home.activation.minimizeAllWindowsShortcut =
     lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+      /usr/bin/defaults write -g NSUserKeyEquivalents -dict-add \
+        Minimize '"^~@m"' '"Minimize All Windows"' '"@m"'
       /usr/bin/defaults write pbs NSServicesStatus -dict-add \
         '"(null) - Minimize All Windows - runWorkflowAsService"' \
-        '{key_equivalent = "^~@m"; enabled_context_menu = 1; enabled_services_menu = 1;}'
+        '{key_equivalent = "@m"; enabled_context_menu = 1; enabled_services_menu = 1;}'
       /System/Library/CoreServices/pbs -update
     '';
 }

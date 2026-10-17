@@ -20,28 +20,67 @@
 				<key>ActionParameters</key>
 				<dict>
 					<key>source</key>
-					<string>on run {input, parameters}
+					<string>on minimizeWindow(appWindow)
+    tell application "System Events"
+        try
+            if (value of attribute "AXFullScreen" of appWindow) as boolean then return "skipped"
+        end try
+        if not (exists attribute "AXMinimized" of appWindow) then return "skipped"
+        if (value of attribute "AXMinimized" of appWindow) as boolean then return "already minimized"
+
+        try
+            set value of attribute "AXMinimized" of appWindow to true
+        end try
+        delay 0.1
+        if (value of attribute "AXMinimized" of appWindow) as boolean then return "minimized"
+
+        -- Some apps expose a working minimize button instead of a writable state.
+        try
+            perform action "AXPress" of (first button of appWindow whose subrole is "AXMinimizeButton")
+        end try
+        delay 0.1
+        if (value of attribute "AXMinimized" of appWindow) as boolean then return "minimized"
+        return "failed"
+    end tell
+end minimizeWindow
+
+on run {input, parameters}
+    set minimizedCount to 0
+    set failedApps to {}
     tell application "System Events"
         if not UI elements enabled then
             error "Enable the app running this Quick Action in System Settings &gt; Privacy &amp; Security &gt; Accessibility."
         end if
 
-        set minimizedCount to 0
-        set appProcesses to every application process whose background only is false
+        -- Helper processes can own windows even when marked as background-only.
+        set appProcesses to every application process
         repeat with appProcess in appProcesses
             try
-                set appWindows to every window of appProcess
-                repeat with appWindow in appWindows
+                set windowCount to count of windows of appProcess
+                -- Minimizing can change window ordering. Work from the end.
+                repeat with windowIndex from windowCount to 1 by -1
                     try
-                        if value of attribute "AXMinimized" of appWindow is false then
-                            set value of attribute "AXMinimized" of appWindow to true
-                            set minimizedCount to minimizedCount + 1
+                        set outcome to my minimizeWindow(window windowIndex of appProcess)
+                        if outcome is "minimized" then set minimizedCount to minimizedCount + 1
+                        if outcome is "failed" then
+                            set appName to name of appProcess
+                            if appName is not in failedApps then set end of failedApps to appName
                         end if
+                    on error errText number errNum
+                        set appName to name of appProcess
+                        if appName is not in failedApps then set end of failedApps to appName
+                        log (appName &amp; ": " &amp; errNum &amp; " " &amp; errText)
                     end try
                 end repeat
             end try
         end repeat
     end tell
+
+    if (count of failedApps) &gt; 0 then
+        set AppleScript's text item delimiters to ", "
+        display notification ("Could not minimize every window in: " &amp; (failedApps as text)) with title "Minimize All Windows"
+        set AppleScript's text item delimiters to ""
+    end if
     return minimizedCount
 end run
 </string>
