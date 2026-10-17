@@ -8,6 +8,7 @@ herdr.overrideAttrs (old: {
     ../patches/herdr-focused-pane-background.patch
     ../patches/herdr-agent-context.patch
     ../patches/herdr-rounded-tabs.patch
+    ../patches/herdr-rounded-sidebar.patch
   ];
   doCheck = true;
   cargoTestFlags = [ "--bin" "herdr" "dotfiles_" ];

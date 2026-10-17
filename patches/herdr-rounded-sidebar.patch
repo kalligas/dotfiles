@@ -1,0 +1,392 @@
+diff --git a/src/ui/tabs.rs b/src/ui/tabs.rs
+--- a/src/ui/tabs.rs
++++ b/src/ui/tabs.rs
+@@ -403,6 +403,21 @@
+         } else {
+             Style::default().fg(p.overlay1).bg(p.surface0)
+         };
++        let name = tab_chrome_label(ws, idx);
++        let name_width = display_width_u16(&name);
++        // An odd spare cell cannot be split equally. Leave it outside the
++        // selected surface, keeping tab positions and mouse targets stable.
++        let rect = if active
++            && rect.width > name_width.saturating_add(2)
++            && (rect.width - name_width) % 2 == 1
++        {
++            Rect {
++                width: rect.width - 1,
++                ..rect
++            }
++        } else {
++            rect
++        };
+         // Caps stay inside the existing padding and click target. Clip the
+         // label inside them so wide characters cannot overwrite either cap.
+         let rounded = active && rect.width >= 3;
+@@ -412,7 +427,6 @@
+             rect
+         };
+         let width = label_rect.width as usize;
+-        let name = tab_chrome_label(ws, idx);
+         // Pad by terminal columns, not chars, so wide glyphs stay centered.
+         let padding = width.saturating_sub(display_width_u16(&name) as usize);
+         let left = padding / 2;
+@@ -579,9 +593,12 @@
+                     assert_eq!(rect.width, tab_width(&app.workspaces[0], idx));
+                     assert!(buffer_row_text(buffer, rect, 0).contains(label));
+                     if idx == selected {
++                        let right_cap = (rect.x..rect.right())
++                            .find(|x| buffer[(*x, 0)].symbol() == ACTIVE_TAB_RIGHT_CAP)
++                            .unwrap();
+                         for (x, symbol) in [
+                             (rect.x, ACTIVE_TAB_LEFT_CAP),
+-                            (rect.right() - 1, ACTIVE_TAB_RIGHT_CAP),
++                            (right_cap, ACTIVE_TAB_RIGHT_CAP),
+                         ] {
+                             let cell = &buffer[(x, 0)];
+                             assert_eq!(cell.symbol(), symbol);
+@@ -590,7 +607,7 @@
+                             assert_eq!(cell.bg, panel_bg);
+                             assert!(!cell.modifier.contains(Modifier::BOLD));
+                         }
+-                        for x in rect.x + 1..rect.right() - 1 {
++                        for x in rect.x + 1..right_cap {
+                             let cell = &buffer[(x, 0)];
+                             assert_eq!(cell.bg, FOCUSED_PANE_BACKGROUND);
+                             assert_eq!(cell.fg, app.palette.overlay1);
+@@ -608,6 +625,43 @@
+                     }
+                 }
+             }
++        }
++    }
++
++    #[test]
++    fn dotfiles_active_tab_padding_is_symmetric_without_moving_click_targets() {
++        for label in ["1", "22", "review", "提交", "a Z"] {
++            let mut app = AppState::test_new();
++            let mut ws = Workspace::test_new("test");
++            ws.tabs[0].set_custom_name(label.into());
++            app.workspaces = vec![ws];
++            app.active = Some(0);
++            app.view.tab_bar_rect = Rect::new(0, 0, 40, 1);
++            app.view.tab_hit_areas =
++                compute_tab_bar_view(&app.workspaces[0], app.view.tab_bar_rect, 0, true, false)
++                    .tab_hit_areas;
++            let hits = app.view.tab_hit_areas.clone();
++            let mut terminal = Terminal::new(TestBackend::new(40, 1)).unwrap();
++            let rendered = terminal
++                .draw(|frame| render_tab_bar(&app, frame, app.view.tab_bar_rect))
++                .unwrap();
++            let buffer = rendered.buffer;
++            let rect = hits[0];
++            let end = (rect.x..rect.right())
++                .find(|x| buffer[(*x, 0)].symbol() == ACTIVE_TAB_RIGHT_CAP)
++                .unwrap();
++            let mut left = 0;
++            while buffer[(rect.x + 1 + left, 0)].symbol() == " " {
++                left += 1;
++            }
++            // A wide glyph's trailing cell is blank in the frame. Count the
++            // label's display columns rather than mistaking that cell for padding.
++            let right = end - (rect.x + 1 + left + display_width_u16(label));
++            assert_eq!(left, right, "padding for {label}");
++            for x in end + 1..rect.right() {
++                assert_eq!(buffer[(x, 0)].bg, app.palette.panel_bg);
++            }
++            assert_eq!(app.view.tab_hit_areas, hits);
+         }
+     }
+ 
+diff --git a/src/ui/sidebar.rs b/src/ui/sidebar.rs
+--- a/src/ui/sidebar.rs
++++ b/src/ui/sidebar.rs
+@@ -9,6 +9,7 @@
+ };
+ 
+ use self::tokens::{ResolvedToken, ResolvedTokenKind, SpaceTokenContext};
++use super::panes::FOCUSED_PANE_BACKGROUND;
+ use super::scrollbar::{render_scrollbar, should_show_scrollbar};
+ use super::status::{state_icon, state_label, state_label_color};
+ use super::text::{display_width, display_width_u16, truncate_end};
+@@ -717,7 +718,7 @@
+     }
+ 
+     Rect::new(
+-        card.rect.x + card.rect.width.saturating_sub(1),
++        card.rect.x + card.rect.width.saturating_sub(2),
+         card.rect.y,
+         1,
+         1,
+@@ -1206,6 +1207,35 @@
+     style
+ }
+ 
++// Text reserves the outer columns so the same font corners used by panes
++// can round sidebar selections without covering labels or controls.
++fn render_card_corners(frame: &mut Frame, surface: Rect, background: Color, backdrop: Color) {
++    if surface.width < 3 || surface.height == 0 || background == Color::Reset {
++        return;
++    }
++    let corners = if surface.height == 1 {
++        vec![
++            (surface.x, surface.y, "\u{10f000}"),
++            (surface.right() - 1, surface.y, "\u{10f001}"),
++        ]
++    } else {
++        vec![
++            (surface.x, surface.y, "\u{1fbee}"),
++            (surface.right() - 1, surface.y, "\u{1fbed}"),
++            (surface.x, surface.bottom() - 1, "\u{1fbec}"),
++            (surface.right() - 1, surface.bottom() - 1, "\u{1fbef}"),
++        ]
++    };
++    let visible = surface.intersection(frame.area());
++    for (x, y, symbol) in corners {
++        if x >= visible.x && x < visible.right() && y >= visible.y && y < visible.bottom() {
++            let cell = &mut frame.buffer_mut()[(x, y)];
++            cell.reset();
++            cell.set_symbol(symbol).set_fg(background).set_bg(backdrop);
++        }
++    }
++}
++
+ fn render_workspace_list(
+     app: &AppState,
+     terminal_runtimes: &TerminalRuntimeRegistry,
+@@ -1255,14 +1285,20 @@
+         let highlighted = selected || is_active || is_dragged;
+         let (agg_state, agg_seen) = ws.aggregate_state(&app.terminals);
+ 
+-        if highlighted {
+-            let bg = if selected {
++        let card_background = if highlighted {
++            Some(if is_active {
++                FOCUSED_PANE_BACKGROUND
++            } else if selected {
+                 workspace_selection_background(p, is_active)
+             } else if is_dragged {
+                 p.surface1
+             } else {
+                 p.active_row_bg
+-            };
++            })
++        } else {
++            None
++        };
++        if let Some(bg) = card_background {
+             let buf = frame.buffer_mut();
+             for y in row_y..row_y + row_height {
+                 if y >= list_bottom {
+@@ -1369,11 +1405,16 @@
+                 p,
+                 card.rect
+                     .width
+-                    .saturating_sub(prefix_width + trailing_width) as usize,
++                    .saturating_sub(prefix_width + trailing_width + 1) as usize,
+             ));
+             frame.render_widget(
+                 Paragraph::new(Line::from(spans)),
+-                Rect::new(card.rect.x, row_y + row_index as u16, card.rect.width, 1),
++                Rect::new(
++                    card.rect.x,
++                    row_y + row_index as u16,
++                    card.rect.width.saturating_sub(1),
++                    1,
++                ),
+             );
+         }
+ 
+@@ -1385,6 +1426,15 @@
+                 )),
+                 workspace_group_chevron_rect(card),
+             );
++        }
++        if let Some(bg) = card_background {
++            let surface = card.rect.intersection(Rect::new(
++                area.x,
++                area.y,
++                area.width,
++                area.height.saturating_sub(1),
++            ));
++            render_card_corners(frame, surface, bg, p.sidebar_bg);
+         }
+     }
+ 
+@@ -1502,7 +1552,7 @@
+ 
+         let is_active = app.is_active_pane(detail.ws_idx, detail.tab_idx, detail.pane_id);
+         let row_style = if is_active {
+-            Style::default().bg(p.active_row_bg)
++            Style::default().bg(FOCUSED_PANE_BACKGROUND)
+         } else {
+             Style::default()
+         };
+@@ -1530,12 +1580,22 @@
+                 agent_style,
+                 p,
+                 body.width
+-                    .saturating_sub(if row_index == 0 { 1 } else { 3 }) as usize,
++                    .saturating_sub(if row_index == 0 { 2 } else { 4 }) as usize,
+             ));
+             frame.render_widget(
+                 Paragraph::new(Line::from(spans)).style(row_style),
+-                Rect::new(body.x, row_y + row_index as u16, body.width, 1),
++                Rect::new(
++                    body.x,
++                    row_y + row_index as u16,
++                    body.width.saturating_sub(1),
++                    1,
++                ),
+             );
++        }
++        if is_active {
++            let surface = Rect::new(body.x, row_y, body.width, height);
++            frame.buffer_mut().set_style(surface, row_style);
++            render_card_corners(frame, surface, FOCUSED_PANE_BACKGROUND, p.sidebar_bg);
+         }
+         row_y = row_y
+             .saturating_add(height)
+@@ -1617,6 +1677,142 @@
+                     row_text(buffer, row, width)
+                 )
+             })
++    }
++
++    #[test]
++    fn dotfiles_expanded_spaces_round_the_active_card_and_preserve_colors_and_targets() {
++        for backdrop in [Color::Reset, Color::Rgb(10, 20, 30)] {
++            let config: crate::config::Config = toml::from_str(r##"
++[ui.sidebar.spaces]
++rows = [["state_icon", { token = "workspace", fg = "#8eb7e3", bold = true }], [{ token = "branch", fg = "#c2a9db" }]]
++"##).unwrap();
++            let mut app = AppState::test_new();
++            app.palette.sidebar_bg = backdrop;
++            app.sidebar_spaces = config.ui.sidebar.spaces;
++            let mut first = Workspace::test_new("one");
++            first.cached_git_branch = Some("main".into());
++            let mut second = Workspace::test_new("two");
++            second.cached_git_branch = Some("other".into());
++            app.workspaces = vec![first, second];
++            app.active = Some(0);
++            app.mode = Mode::Terminal;
++            let area = Rect::new(0, 0, 30, 30);
++            app.view.workspace_card_areas = compute_workspace_card_areas(&app, area);
++            let targets: Vec<_> = app
++                .view
++                .workspace_card_areas
++                .iter()
++                .map(|card| card.rect)
++                .collect();
++            let mut terminal = Terminal::new(TestBackend::new(30, 30)).unwrap();
++            let rendered = terminal
++                .draw(|frame| render_sidebar(&app, &TerminalRuntimeRegistry::new(), frame, area))
++                .unwrap();
++            let buffer = rendered.buffer;
++            let card = targets[0];
++            assert_eq!(card.height, 2);
++            for (x, y, symbol) in [
++                (card.x, card.y, "\u{1fbee}"),
++                (card.right() - 1, card.y, "\u{1fbed}"),
++                (card.x, card.bottom() - 1, "\u{1fbec}"),
++                (card.right() - 1, card.bottom() - 1, "\u{1fbef}"),
++            ] {
++                let cell = &buffer[(x, y)];
++                assert_eq!(cell.symbol(), symbol);
++                assert_eq!(cell.fg, FOCUSED_PANE_BACKGROUND);
++                assert_eq!(cell.bg, backdrop);
++            }
++            let name = &buffer[(find_symbol_x(buffer, card.y, card.right(), "o"), card.y)];
++            let branch = &buffer[(
++                find_symbol_x(buffer, card.y + 1, card.right(), "m"),
++                card.y + 1,
++            )];
++            assert_eq!(name.fg, Color::Rgb(142, 183, 227));
++            assert_eq!(branch.fg, Color::Rgb(194, 169, 219));
++            assert_eq!(name.bg, FOCUSED_PANE_BACKGROUND);
++            assert_eq!(branch.bg, FOCUSED_PANE_BACKGROUND);
++            assert_eq!(buffer[(targets[1].x, targets[1].y)].bg, backdrop);
++            assert_eq!(
++                targets,
++                app.view
++                    .workspace_card_areas
++                    .iter()
++                    .map(|card| card.rect)
++                    .collect::<Vec<_>>()
++            );
++        }
++    }
++
++    #[test]
++    fn dotfiles_expanded_agent_cards_round_only_the_focused_agent_and_keep_token_colors() {
++        for row_count in [1, 4] {
++            for width in [3, 12, 30] {
++                let (mut app, first, second) = collapsed_agent_app();
++                app.active = Some(0);
++                app.palette.sidebar_bg = Color::Reset;
++                let config: crate::config::Config = toml::from_str(
++                    r##"
++[ui.sidebar.agents]
++rows = [[{ token = "workspace", fg = "#8eb7e3", bold = true, dim = false }]]
++row_gap = 1
++"##,
++                )
++                .unwrap();
++                app.sidebar_agents = config.ui.sidebar.agents;
++                app.sidebar_agents.rows = vec![app.sidebar_agents.rows[0].clone(); row_count];
++                let area = Rect::new(0, 0, width, 30);
++                for focused in [first, second] {
++                    app.workspaces[0].tabs[0].layout.focus_pane(focused);
++                    let details = agent_panel_entries_from(&app, &TerminalRuntimeRegistry::new());
++                    let metrics = agent_panel_scroll_metrics(&app, area);
++                    let body = agent_panel_body_rect(area, should_show_scrollbar(metrics));
++                    let mut terminal = Terminal::new(TestBackend::new(width, 30)).unwrap();
++                    let rendered = terminal
++                        .draw(|frame| {
++                            render_agent_detail(&app, &TerminalRuntimeRegistry::new(), frame, area)
++                        })
++                        .unwrap();
++                    let buffer = rendered.buffer;
++                    let mut y = body.y;
++                    for (index, detail) in details.iter().enumerate() {
++                        let height = row_count as u16;
++                        if y + height > body.bottom() {
++                            break;
++                        }
++                        let active =
++                            app.is_active_pane(detail.ws_idx, detail.tab_idx, detail.pane_id);
++                        if active {
++                            let (left_top, right_top, left_bottom, right_bottom) = if height == 1 {
++                                ("\u{10f000}", "\u{10f001}", "\u{10f000}", "\u{10f001}")
++                            } else {
++                                ("\u{1fbee}", "\u{1fbed}", "\u{1fbec}", "\u{1fbef}")
++                            };
++                            for (x, row, symbol) in [
++                                (body.x, y, left_top),
++                                (body.right() - 1, y, right_top),
++                                (body.x, y + height - 1, left_bottom),
++                                (body.right() - 1, y + height - 1, right_bottom),
++                            ] {
++                                let cell = &buffer[(x, row)];
++                                assert_eq!(cell.symbol(), symbol);
++                                assert_eq!(cell.fg, FOCUSED_PANE_BACKGROUND);
++                                assert_eq!(cell.bg, Color::Reset);
++                            }
++                            if width >= 12 {
++                                let cell = &buffer[(body.x + 1, y)];
++                                assert_eq!(cell.fg, Color::Rgb(142, 183, 227));
++                                assert_eq!(cell.bg, FOCUSED_PANE_BACKGROUND);
++                                assert!(cell.modifier.contains(Modifier::BOLD));
++                            }
++                        } else {
++                            assert_eq!(buffer[(body.x, y)].bg, Color::Reset);
++                            assert_eq!(buffer[(body.x, y)].symbol(), " ");
++                        }
++                        y += height + agent_entry_gap(&app, index, details.len());
++                    }
++                }
++            }
++        }
+     }
+ 
+     #[test]

@@ -150,6 +150,18 @@ tab padding. Tab widths, spacing, and mouse targets stay the same. The
 area, outside the Nerd Font icon ranges. The package build also checks selected
 and inactive tab styles, selection changes, narrow tabs, and wide labels.
 
+The patch `patches/herdr-rounded-sidebar.patch` gives active Spaces and Agents
+entries the same gray background and rounded corners. Multirow entries use
+the pane corners; single-row entries use the tab ends. Sidebar labels reserve
+the rightmost column for the curves, and workspace group controls sit one
+column inside the right edge. Configured label colors remain visible.
+
+The same patch centers selected tab labels with equal padding on both sides.
+When the available padding has an odd number of cells, the extra cell stays
+outside the shaded tab. Tab positions and click targets keep their original
+sizes. The package build checks padding, focused sidebar entries, token colors,
+narrow cards, and transparent corners.
+
 The terminal theme's `overlay0` color is pale gray (`#b4bfd6`) so muted sidebar
 headings and controls remain readable over the transparent background. The
 color lives in `home/.config/herdr/config.toml` under `[theme.custom]`. Reload
