@@ -34,6 +34,7 @@ pane_gaps = true
 hide_tab_bar_when_single_tab = true
 accent = "#ffffff"
 
+agent_panel_sort = "priority"
 [ui.toast]
 delivery = "terminal"
 delay_seconds = 1

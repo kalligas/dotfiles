@@ -82,9 +82,9 @@ the shaded area inside the padding. Application backgrounds and selection colors
 keep their own colors. A tab with one pane keeps the terminal's transparent
 background.
 
-The translucent near-black is `rgba(6, 7, 8, 0.7)`, so WezTerm's blurred window
+The translucent near-black is `rgba(0, 9, 17, 0.7)`, so WezTerm's blurred window
 background shows through the focused pane. The WezTerm window background is
-`#32363b` at 0.70 opacity, lighter than the selected surfaces, so the focused
+`#3d3d3d` at 0.70 opacity, lighter than the selected surfaces, so the focused
 pane, selected tab, and active sidebar entry read darker than the rest of the
 window. Terminal escape sequences carry no
 alpha, so Herdr paints the surface with palette index 235, and

@@ -19,7 +19,7 @@ from fontTools.pens.ttGlyphPen import TTGlyphPen
 # WezTerm drops the alpha of a text color, so each glyph carries the
 # translucent surface gray as a color layer. Keep it equal to palette index
 # 235 in wezterm.lua, which fills the rest of each selected surface.
-SURFACE_RGBA = (6, 7, 8, 179)
+SURFACE_RGBA = (0, 9, 17, 179)
 # Far enough below the cell that the crop error stays under 0.05 px.
 CROP_PIXEL_Y = -30000
 
