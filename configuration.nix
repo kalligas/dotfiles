@@ -58,6 +58,7 @@
     casks = [
       "chatgpt"
       "claude"
+      "codex"
       "dbeaver-community"
       "docker-desktop"
       "obsidian"

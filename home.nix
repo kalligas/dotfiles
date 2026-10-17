@@ -4,7 +4,6 @@
   pkgs,
   user,
   herdrPkgs ? pkgs,
-  codexPkgs ? pkgs,
   ...
 }:
 
@@ -40,10 +39,9 @@ in
     uv
     vivid
     yazi
-  ]) ++ [
-    codexPkgs.codex
-    herdrPkgs.herdr
-  ];
+  ]) ++ (with herdrPkgs; [
+    herdr
+  ]);
 
   home.sessionPath = [
     "${config.home.homeDirectory}/.local/bin"

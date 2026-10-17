@@ -47,13 +47,22 @@ else
   curl -fsSL https://kunchenguid.github.io/treehouse/install.sh | sh
 fi
 
-echo "==> Step 5: first darwin-rebuild switch"
+echo "==> Step 5: Claude Code"
+# The native installer puts claude in ~/.local/bin and keeps it updated in the
+# background, which a Nix or Homebrew install would not do.
+if command -v claude >/dev/null 2>&1; then
+  echo "    claude already installed, skipping"
+else
+  curl -fsSL https://claude.ai/install.sh | bash
+fi
+
+echo "==> Step 6: first darwin-rebuild switch"
 NIX_BIN="$(command -v nix)"
 sudo env DOTFILES_USER="$DOTFILES_USER" "$NIX_BIN" \
   run github:nix-darwin/nix-darwin/nix-darwin-26.05#darwin-rebuild -- \
   switch --flake "$HOME/.dotfiles#mac" --impure
 
-echo "==> Step 6: Unity Gateway"
+echo "==> Step 7: Unity Gateway"
 # uv comes from Home Manager, so it exists only after the first switch, and
 # this shell's PATH may not include the new profile yet.
 UV_BIN="$(command -v uv || echo "/etc/profiles/per-user/$REAL_USER/bin/uv")"
@@ -66,7 +75,7 @@ else
     git+https://github.com/databricks/unity-gateway@v0.2.0
 fi
 
-echo "==> Step 7: agent configuration"
+echo "==> Step 8: agent configuration"
 "$DIR/agents/install.sh"
 
 echo "==> Done. Use ./rebuild.sh for future changes."

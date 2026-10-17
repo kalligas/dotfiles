@@ -6,8 +6,9 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 
 - macOS defaults: dark mode, fast key repeat, clean Finder/Dock defaults, tap-to-click.
 - Homebrew casks: WezTerm and Nerd Font fallbacks.
-- Claude Code: installed with the official native installer into `~/.local/bin`, not Nix. The native install updates itself, and a second Nix copy would share the same Keychain login, which can cause repeated logouts.
-- Nix user packages: Neovim, Starship, Codex, Herdr, Node.js/npm/npx, ripgrep, fd, fzf, jq, lazygit, yazi, lsd, vivid, bat, delta, tree-sitter, and uv.
+- Claude Code: installed by `bootstrap.sh` with the official native installer into `~/.local/bin`, not Nix. The native install updates itself, and a second Nix copy would share the same Keychain login, which can cause repeated logouts.
+- Codex: installed as a Homebrew cask, not Nix. Codex releases about weekly, and a Homebrew install can be upgraded in place from Codex's own update prompt or with `brew upgrade --cask codex`, while a Nix install waits for nixpkgs and needs a rebuild.
+- Nix user packages: Neovim, Starship, Herdr, Node.js/npm/npx, ripgrep, fd, fzf, jq, lazygit, yazi, lsd, vivid, bat, delta, tree-sitter, and uv.
 - Terminal/editor style: Cyberdream dark palette, blurred/translucent WezTerm, transparent Neovim, glass-friendly Herdr.
 - CLI theming: Cyberdream Starship, Bat, Delta, LazyGit, Yazi, LSD, and Vivid.
 - Workflow helpers: Treehouse aliases/functions and Herdr aliases.
@@ -110,7 +111,7 @@ Clone this repo, review the files, then run:
 ./bootstrap.sh
 ```
 
-`bootstrap.sh` installs Determinate Nix if needed, symlinks this repo to `~/.dotfiles`, records your macOS username in the gitignored `.machine/user` file, installs Treehouse into `~/.local/bin` if missing, runs the first nix-darwin switch, installs Unity Gateway (`ug`) with `uv tool install` if missing, and activates the shared Codex and Claude Code configuration from `agents/`.
+`bootstrap.sh` installs Determinate Nix if needed, symlinks this repo to `~/.dotfiles`, records your macOS username in the gitignored `.machine/user` file, installs Treehouse and Claude Code into `~/.local/bin` if missing, runs the first nix-darwin switch, installs Unity Gateway (`ug`) with `uv tool install` if missing, and activates the shared Codex and Claude Code configuration from `agents/`.
 
 After the first setup, edit files in this repo and apply changes with:
 
