@@ -1,0 +1,238 @@
+--- a/src/ui/panes.rs
++++ b/src/ui/panes.rs
+@@ -338,6 +338,12 @@
+     pane_infos
+ }
+ 
++// Keep full redraws and retained terminal updates on the same focus rule.
++pub(crate) fn focused_pane_background(app: &AppState, info: &PaneInfo) -> Option<Color> {
++    let workspace = app.active.and_then(|index| app.workspaces.get(index))?;
++    (info.is_focused && workspace.layout.pane_count() > 1).then_some(Color::Rgb(36, 39, 43))
++}
++
+ pub(super) fn render_panes(
+     app: &AppState,
+     terminal_runtimes: &TerminalRuntimeRegistry,
+@@ -362,6 +368,19 @@
+                 && !pane_is_scrolled_back(rt)
+                 && app.pane_exposes_host_cursor(ws_idx, info.id);
+             rt.render(frame, info.inner_rect, show_cursor);
++            if let Some(background) = focused_pane_background(app, info) {
++                // Tint default backgrounds only; applications own explicit colors.
++                let area = info.inner_rect.intersection(frame.area());
++                let buf = frame.buffer_mut();
++                for y in area.y..area.bottom() {
++                    for x in area.x..area.right() {
++                        let cell = &mut buf[(x, y)];
++                        if cell.bg == Color::Reset {
++                            cell.set_bg(background);
++                        }
++                    }
++                }
++            }
+             render_pane_scrollbar(app, frame, info, rt);
+ 
+             let should_dim = !info.is_focused && multi_pane && !terminal_active;
+@@ -1017,6 +1036,98 @@
+             &app.view.split_borders,
+             frame,
+         );
++    }
++
++    #[tokio::test]
++    async fn focused_pane_background_follows_focus_and_preserves_app_colors() {
++        use ratatui::{backend::TestBackend, Terminal};
++
++        let mut app = AppState::test_new();
++        app.mode = Mode::Terminal;
++        app.pane_borders = false;
++        app.pane_gaps = false;
++        app.pane_scrollbars = false;
++        let mut workspace = Workspace::test_new("test");
++        let left = workspace.tabs[0].root_pane;
++        let right = workspace.test_split(ratatui::layout::Direction::Horizontal);
++        for id in [left, right] {
++            workspace.insert_test_runtime(
++                id,
++                TerminalRuntime::test_with_screen_bytes(
++                    6,
++                    2,
++                    b"\x1b[48;2;20;40;60m\x1b[38;2;200;210;220mX\x1b[0m plain",
++                ),
++            );
++        }
++        app.workspaces = vec![workspace];
++        app.active = Some(0);
++        app.ensure_test_terminals();
++        let runtimes = TerminalRuntimeRegistry::new();
++        let mut terminal = Terminal::new(TestBackend::new(12, 2)).unwrap();
++        for focused in [left, right] {
++            app.workspaces[0].tabs[0].layout.focus_pane(focused);
++            let infos = compute_pane_infos(
++                &app,
++                &runtimes,
++                Rect::new(0, 0, 12, 2),
++                false,
++                crate::kitty_graphics::HostCellSize::default(),
++            );
++            terminal
++                .draw(|frame| render_panes(&app, &runtimes, frame, &infos, &[]))
++                .unwrap();
++            let buffer = terminal.backend().buffer();
++            for info in &infos {
++                let x = info.inner_rect.x;
++                assert_eq!(buffer[(x, 0)].bg, Color::Rgb(20, 40, 60));
++                assert_eq!(buffer[(x, 0)].fg, Color::Rgb(200, 210, 220));
++                assert_eq!(buffer[(x, 0)].symbol(), "X");
++                let expected = if info.id == focused {
++                    Color::Rgb(36, 39, 43)
++                } else {
++                    Color::Reset
++                };
++                assert_eq!(buffer[(x + 1, 0)].bg, expected);
++                assert_eq!(buffer[(x + 1, 1)].bg, expected);
++            }
++        }
++    }
++
++    #[tokio::test]
++    async fn focused_pane_background_keeps_a_single_pane_transparent() {
++        use ratatui::{backend::TestBackend, Terminal};
++
++        let mut app = AppState::test_new();
++        app.mode = Mode::Terminal;
++        app.pane_scrollbars = false;
++        let mut workspace = Workspace::test_new("test");
++        let root = workspace.tabs[0].root_pane;
++        workspace.insert_test_runtime(
++            root,
++            TerminalRuntime::test_with_screen_bytes(6, 2, b"plain"),
++        );
++        app.workspaces = vec![workspace];
++        app.active = Some(0);
++        app.ensure_test_terminals();
++        let runtimes = TerminalRuntimeRegistry::new();
++        let infos = compute_pane_infos(
++            &app,
++            &runtimes,
++            Rect::new(0, 0, 6, 2),
++            false,
++            crate::kitty_graphics::HostCellSize::default(),
++        );
++        let mut terminal = Terminal::new(TestBackend::new(6, 2)).unwrap();
++        terminal
++            .draw(|frame| render_panes(&app, &runtimes, frame, &infos, &[]))
++            .unwrap();
++        assert!(terminal
++            .backend()
++            .buffer()
++            .content
++            .iter()
++            .all(|cell| cell.bg == Color::Reset));
+     }
+ 
+     #[test]
+--- a/src/ui.rs
++++ b/src/ui.rs
+@@ -39,7 +39,7 @@
+ use self::navigator::render_navigator_overlay;
+ pub(crate) use self::onboarding::onboarding_welcome_continue_rect;
+ use self::onboarding::render_onboarding_overlay;
+-pub(crate) use self::panes::popup_pane_rects;
++pub(crate) use self::panes::{focused_pane_background, popup_pane_rects};
+ use self::panes::{render_empty, render_popup_pane, resize_popup_pane};
+ pub(crate) use self::release_notes::{
+     product_announcement_display_lines, release_notes_close_button_rect,
+--- a/src/server/headless.rs
++++ b/src/server/headless.rs
+@@ -199,6 +199,7 @@
+     frame: &mut FrameData,
+     area: Rect,
+     patch: crate::pane::TerminalDirtyPatch,
++    background: Option<ratatui::style::Color>,
+ ) -> bool {
+     if !rect_fits_frame(area, frame) {
+         return false;
+@@ -215,6 +216,15 @@
+             return false;
+         }
+         frame.cells[start..end].clone_from_slice(&row_cells);
++        if let Some(background) = background {
++            let default = crate::protocol::color_to_u32(ratatui::style::Color::Reset);
++            let background = crate::protocol::color_to_u32(background);
++            for cell in &mut frame.cells[start..end] {
++                if cell.bg == default {
++                    cell.bg = background;
++                }
++            }
++        }
+     }
+     true
+ }
+@@ -4306,7 +4316,8 @@
+                     if dirty_patch_intersects_hyperlinks(&frame, info.inner_rect, &patch) {
+                         retained_fallback!("hyperlink_intersection");
+                     }
+-                    if !apply_terminal_dirty_patch(&mut frame, info.inner_rect, patch) {
++                    let background = crate::ui::focused_pane_background(&self.app.state, &info);
++                    if !apply_terminal_dirty_patch(&mut frame, info.inner_rect, patch, background) {
+                         retained_fallback!("patch_apply_failed");
+                     }
+                     touched = true;
+@@ -10145,6 +10156,56 @@
+     }
+ 
+     #[tokio::test]
++    async fn focused_pane_background_retained_updates_match_full_redraws() {
++        let make_server = || {
++            let (mut server, rx, left) = retained_test_server(b"initial");
++            let workspace = &mut server.app.state.workspaces[0];
++            let right = workspace.test_split(ratatui::layout::Direction::Horizontal);
++            workspace.insert_test_runtime(
++                right,
++                crate::terminal::TerminalRuntime::test_with_screen_bytes(40, 24, b"other"),
++            );
++            workspace.tabs[0].layout.focus_pane(left);
++            server.app.state.pane_borders = false;
++            server.app.state.pane_scrollbars = false;
++            server.resize_shared_runtime_to_effective_size();
++            (server, rx, left)
++        };
++        let (mut retained, retained_rx, retained_pane) = make_server();
++        let (mut full, full_rx, full_pane) = make_server();
++        retained.render_and_stream();
++        retained_rx
++            .recv_timeout(Duration::from_millis(100))
++            .unwrap();
++        full.render_and_stream();
++        full_rx.recv_timeout(Duration::from_millis(100)).unwrap();
++
++        let update = b"\r\x1b[44mZ\x1b[0mQ";
++        retained
++            .app
++            .state
++            .runtime_for_pane_in_workspace(&retained.app.terminal_runtimes, 0, retained_pane)
++            .unwrap()
++            .test_process_pty_bytes(update);
++        full.app
++            .state
++            .runtime_for_pane_in_workspace(&full.app.terminal_runtimes, 0, full_pane)
++            .unwrap()
++            .test_process_pty_bytes(update);
++
++        assert!(retained.render_retained_pty_update_and_stream());
++        full.render_and_stream();
++        let retained_frame = read_server_frame(
++            retained_rx
++                .recv_timeout(Duration::from_millis(100))
++                .unwrap(),
++        );
++        let full_frame =
++            read_server_frame(full_rx.recv_timeout(Duration::from_millis(100)).unwrap());
++        assert_frame_data_eq(&retained_frame, &full_frame);
++    }
++
++    #[tokio::test]
+     async fn retained_pty_update_matches_full_render_frame() {
+         let initial = b"\x1b[6 qleft \xe4\xb8\xad";
+         let update = b"\r\x1b[44mZ\x1b[0m";

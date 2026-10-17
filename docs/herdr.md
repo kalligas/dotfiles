@@ -68,3 +68,23 @@ q or Esc       leave copy mode
 ```
 
 Mouse selection, pane focus, pane resizing, and sidebar navigation are first-class in Herdr too.
+
+## Pane Appearance
+
+Herdr uses borderless panes with a blank gap between panes. The custom Herdr
+package shades the focused pane's default background gray (`#24272b`) when a
+tab contains multiple panes. Application backgrounds and selection colors keep
+their own colors. A tab with one pane keeps the terminal's transparent background.
+
+The Nix package applies `patches/herdr-focused-pane-background.patch` to Herdr
+0.8.2. The package build runs rendering tests for focus changes, application
+colors, single-pane transparency, and terminal output updates. The version check
+in `nix/herdr.nix` requires rebasing the patch before a Herdr upgrade.
+
+Build and test the custom package:
+
+```sh
+nix build .#herdr --out-link .machine/herdr-focus-result
+```
+
+Run `./rebuild.sh` to install the custom package through Home Manager.

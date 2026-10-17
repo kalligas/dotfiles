@@ -27,9 +27,18 @@
       localUser = builtins.getEnv "DOTFILES_USER";
       user = if localUser != "" then localUser else "michaliskalligas";
       system = "aarch64-darwin";
-      herdrPkgs = import nixpkgs-herdr { inherit system; };
+      herdrPkgs = import nixpkgs-herdr {
+        inherit system;
+        overlays = [
+          (_final: prev: {
+            herdr = import ./nix/herdr.nix { inherit (prev) herdr lib; };
+          })
+        ];
+      };
     in
     {
+      packages.${system}.herdr = herdrPkgs.herdr;
+
       darwinConfigurations."mac" = nix-darwin.lib.darwinSystem {
         inherit system;
 
