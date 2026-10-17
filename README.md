@@ -36,24 +36,16 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 
 ### macOS windows
 
-`Command-M` runs **Minimize All Windows**, an Automator Quick Action
-that minimizes windows across running apps into the Dock. Opening one app leaves
-the other apps' windows minimized. Full-screen windows and windows that do not
-support minimization are skipped.
+`Command-M` is a global Hammerspoon shortcut that minimizes windows across running
+apps into the Dock. The global shortcut takes priority over each app's Minimize
+command. Opening one app leaves the other apps' windows minimized.
 
-The Quick Action checks helper processes because helper processes can own app
-windows. The Quick Action checks each window's minimized state after requesting
-minimization and tries the window's minimize button if the first request fails.
-A notification names apps whose supported windows could not be minimized.
-
-Home Manager installs the Quick Action and assigns the shortcut during a rebuild.
-The standard **Minimize** command uses `Ctrl-Option-Command-M` to free `Command-M`
-for the Quick Action. Relaunch apps that still use the old shortcut after setup.
-The shortcut also appears under **System Settings > Keyboard > Keyboard Shortcuts >
-Services > General**. macOS may ask for Automation access to System Events and
-Accessibility access for the app running the Quick Action. Grant the requested
-access in **System Settings > Privacy & Security** so the Quick Action can
-minimize other apps' windows.
+Hammerspoon needs access under **System Settings > Privacy & Security >
+Accessibility**. Homebrew installs Hammerspoon, Home Manager links
+`home/.hammerspoon/init.lua`, and Hammerspoon starts at login after its first launch.
+The shortcut covers windows on the current desktop across displays. Full-screen
+windows and windows that do not support minimization are skipped. A window's
+minimize button provides a fallback when setting the minimized state fails.
 
 The shortcuts have three layers:
 

@@ -62,6 +62,7 @@
       "codex"
       "dbeaver-community"
       "docker-desktop"
+      "hammerspoon"
       "obsidian"
       "openvpn-connect"
       "visual-studio-code"
