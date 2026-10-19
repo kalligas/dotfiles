@@ -116,8 +116,22 @@ WezTerm loads the four pane corners and two rounded tab ends from
 `home/.config/wezterm/fonts/HerdrPaneCorners.ttf`. The small font contains
 original outlines with JetBrains Mono's cell metrics. Each curve has equal
 horizontal and vertical radii; the four corners mirror the same circular shape.
-The fallback family is `Herdr Rounded UI`. Regenerate or verify the
-font with:
+The fallback family is `Herdr Rounded UI`.
+
+WezTerm rounds cell widths up to whole pixels. On a 2x display (144 DPI) a
+cell is exactly 15 px, or 600 font units. On a 1x display (72 DPI) a 7.5 px
+cell rounds up to 8 px, or 640 font units. One scalable outline cannot fill
+both cells, so `HerdrPaneCorners1x.ttf` (family `Herdr Rounded UI 1x`)
+carries 640-unit outlines for 1x displays. `wezterm.lua` checks each window's
+DPI when the window opens and when the window moves to another display, and
+picks the 1x family below 96 DPI. At 96 DPI, which Windows uses at 100%
+scaling, a cell is exactly 10 px, so the default family fits.
+
+`wezterm ls-fonts --text` cannot preview the corner glyphs: the tall bitmaps
+exceed its fixed texture and it stops with "Texture Size exceeded". The
+terminal window grows its texture and draws the glyphs normally.
+
+Regenerate or verify both fonts with:
 
 ```sh
 uv run home/.config/wezterm/fonts/generate_corners.py

@@ -70,13 +70,44 @@ elseif is_macos then
 end
 
 config.font_dirs = { wezterm.config_dir .. "/fonts" }
-config.font = wezterm.font_with_fallback({
-	{ family = "JetBrains Mono", weight = "Bold" },
-	"Herdr Rounded UI",
-	"Symbols Nerd Font Mono",
-	"GoMono Nerd Font Mono",
-})
+
+-- Herdr's corner glyphs must fill whole cells, and WezTerm rounds cells to
+-- whole pixels. At 72 DPI (macOS 1x displays) a 7.5 px cell rounds up to
+-- 8 px, which only "Herdr Rounded UI 1x" fills. At 96 and 144 DPI the cell
+-- is a whole 10 or 15 px, which "Herdr Rounded UI" fills.
+-- fonts/generate_corners.py builds both fonts.
+local function font_for_dpi(dpi)
+	return wezterm.font_with_fallback({
+		{ family = "JetBrains Mono", weight = "Bold" },
+		dpi < 96 and "Herdr Rounded UI 1x" or "Herdr Rounded UI",
+		"Symbols Nerd Font Mono",
+		"GoMono Nerd Font Mono",
+	})
+end
+
+config.font = font_for_dpi(144)
 config.font_size = 12.5
+
+-- A window emits window-config-reloaded when it opens and window-resized
+-- when it moves to a display with a different DPI. Remembering each window's
+-- density stops the override's own config reload from looping.
+local corner_font_density = {}
+
+local function match_corner_font_to_dpi(window)
+	local dpi = window:get_dimensions().dpi
+	local density = dpi < 96 and "1x" or "2x"
+	local id = window:window_id()
+	if corner_font_density[id] == density then
+		return
+	end
+	corner_font_density[id] = density
+	local overrides = window:get_config_overrides() or {}
+	overrides.font = font_for_dpi(dpi)
+	window:set_config_overrides(overrides)
+end
+
+wezterm.on("window-config-reloaded", match_corner_font_to_dpi)
+wezterm.on("window-resized", match_corner_font_to_dpi)
 
 config.keys = {
 	{ key = "P", mods = "CTRL|SHIFT", action = act.ActivateCommandPalette },
