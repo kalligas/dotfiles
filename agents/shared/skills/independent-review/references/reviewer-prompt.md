@@ -99,7 +99,9 @@ checks, including command checks, and assigns confidence after verification.
 
 End with "Checked: <criteria, paths, and scenarios inspected>". If there are
 no findings, say "no findings in this pass". Disclose unreadable files or other
-limits. A failed or incomplete review is not a pass with no findings.
+limits. A failed or incomplete review is not a pass with no findings. If a tool
+failure or missing access kept you from reading the change, make the first line
+of your answer exactly "REVIEW INCOMPLETE", then name the failure.
 ```
 
 ## Verification prompt
@@ -149,7 +151,9 @@ Run read-only. Do not edit, stage, commit, write a ledger, start another review,
 install dependencies, run mutating commands, run project CLIs, or contact
 external services, including local endpoints.
 End with "Checked: <fixes, paths, and scenarios inspected>". If there are no
-findings, say "no findings in this pass". Disclose incomplete checks.
+findings, say "no findings in this pass". Disclose incomplete checks. If a tool
+failure or missing access kept you from reading the fix diff, make the first
+line of your answer exactly "REVIEW INCOMPLETE", then name the failure.
 ```
 
 When Step 6 requests a larger verification pass, use the initial review prompt

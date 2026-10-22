@@ -179,11 +179,15 @@ read-only invocation from `references/reviewers.md` and marks a failed run.
 Run reviewers in parallel when the harness allows, with one exception: run at
 most one Codex process at a time. In one run, two Codex reviewers started
 together both failed with `429 Too Many Requests`, while single Codex runs
-succeeded. A reviewer whose output is empty, or whose error log shows a rate
-limit or authentication failure, has not completed its lens. Rerun that lens
-on the next reviewer in the preference order, for example with
-`run_reviewer.sh codex ... || run_reviewer.sh claude ...`, and record the
-substitution for the report.
+succeeded. A reviewer whose output is empty, whose output starts with
+`REVIEW INCOMPLETE`, or whose error log shows a rate limit or authentication
+failure, has not completed its lens. A short answer is not proof of a finished
+review: in one run, every tool call of two Codex reviewers failed with
+`timed out negotiating with the code-mode host`, and each reviewer still wrote
+a 400-byte "Review incomplete" answer that the runner counted as done. Rerun
+the lens of a failed reviewer on the next reviewer in the preference order,
+for example with `run_reviewer.sh codex ... || run_reviewer.sh claude ...`,
+and record the substitution for the report.
 
 After starting the reviewers, tell the user which lens runs on which
 reviewer, and that each reviewer takes about 5 to 15 minutes. When the user

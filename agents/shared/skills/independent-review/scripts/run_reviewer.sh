@@ -64,6 +64,16 @@ if grep -Eq '^ERROR: .*(429 Too Many Requests|exceeded retry limit)' "$err" 2>/d
     reason="rate limited"
 elif [ ! -s "$out" ]; then
     reason="empty review (exit $rc)"
+# A reviewer that could not read the change starts its answer with REVIEW INCOMPLETE, as the
+# prompts in references/reviewer-prompt.md ask. Without this check, a Codex run whose every
+# tool call timed out still counted as done, because it wrote a short "Review incomplete" answer.
+# Only the first non-blank line counts, so a finished review that quotes the phrase still passes.
+elif sed -n '/[^[:space:]]/{p;q;}' "$out" | grep -Eiq '^[#* ]*review incomplete'; then
+    reason="reviewer reported an incomplete review"
+    tool_error=$(grep -m 1 'ERROR codex_core::tools::router' "$err" 2>/dev/null || true)
+    if [ -n "$tool_error" ]; then
+        reason="$reason; first tool error: ${tool_error#*error=}"
+    fi
 fi
 
 if [ -n "$reason" ]; then

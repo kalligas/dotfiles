@@ -65,8 +65,11 @@ its CLI:
 
 The script reads `<name>.prompt.md` and writes `<name>.out.md` and
 `<name>.err.log`. It exits non-zero and writes `<name>.status` when the review
-is empty or the error log shows a rate limit. Chain a fallback reviewer for
-the same lens with `||`:
+is empty, when the review starts with `REVIEW INCOMPLETE`, or when the error
+log shows a rate limit. The reviewer prompts ask a reviewer that could not
+read the change to start its answer with `REVIEW INCOMPLETE`. For a Codex run,
+the status also names the first `codex_core::tools::router` error from the
+error log. Chain a fallback reviewer for the same lens with `||`:
 
 ```sh
 run_reviewer.sh codex "$repo" "$review_dir" security \
@@ -128,6 +131,12 @@ Run at most one Codex process at a time. Two Codex reviewers started together
 both failed with `429 Too Many Requests` and `exceeded retry limit` in their
 error logs, while single runs succeeded (codex-cli 0.153.4). A failed run
 leaves the `--output-last-message` file missing or empty.
+
+A Codex run can also fail inside its tools and still write an answer. In one
+run, every tool call of a single Codex reviewer failed with
+`ERROR codex_core::tools::router: error=timed out negotiating with the
+code-mode host`, three times in a row. The reviewer then wrote a 400-byte
+"Review incomplete" answer, which `run_reviewer.sh` now marks as failed.
 
 ## Gemini
 
