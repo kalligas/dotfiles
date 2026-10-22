@@ -34,10 +34,6 @@ local function minimizeAllWindows()
           remaining = remaining + 1
         end
       end
-      if remaining > 0 then
-        log.wf("%d windows did not minimize", remaining)
-        hs.alert.show(string.format("%d windows could not be minimized", remaining))
-      end
     end)
   end)
 end
