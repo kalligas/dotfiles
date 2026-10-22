@@ -167,18 +167,24 @@ agents by attention needed, and `grouped`, which groups agents by workspace.
 ## Agent Labels and Tabs
 
 The Agents sidebar shows each agent's repository in pale blue, branch in pale
-purple, task title in white, and agent type in gray. Separate rows leave room
+purple, linked worktree folder in pale cyan, task title in white, and agent type
+in gray. The worktree row appears only when the agent runs in a linked Git
+worktree, so agents in a main checkout keep four rows. Separate rows leave room
 for repository and branch names in the narrow sidebar. The rows and colors live
 in `home/.config/herdr/config.toml` under `[ui.sidebar.agents]`.
 
 The custom package also applies `patches/herdr-agent-context.patch`. The patch
-provides the reserved `$repo` and `$branch` agent tokens from each terminal's
-foreground working directory, with the terminal's directory as a fallback.
+provides the reserved `$repo`, `$branch`, and `$worktree` agent tokens from
+each terminal's foreground working directory, with the terminal's directory as
+a fallback.
 Git discovery runs in the existing background refresh every 1.5 seconds.
-Linked worktrees show the original repository name and the worktree's branch.
+Linked worktrees show the original repository name, the worktree's branch, and
+the worktree's checkout folder name. For example, an agent in a
+`dotfiles` worktree checked out at `~/work/dotfiles-review` shows `dotfiles`,
+its branch, and `dotfiles-review`.
 A directory change hides the previous labels until fresh results arrive.
-Directories outside Git repositories omit both labels; a detached HEAD omits
-the branch. Terminal titles remain task labels.
+Directories outside Git repositories omit all three labels; a detached HEAD
+omits the branch. Terminal titles remain task labels.
 
 The same patch renders inactive numbered tabs with the normal light foreground
 and removes dimming. Inactive tabs keep the terminal's transparent background.

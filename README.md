@@ -22,7 +22,7 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 | --- | --- | --- |
 | Shell | Zsh | Interactive command-line shell. |
 | Shell plugins | Zsh Autosuggestions, Zsh Syntax Highlighting | Suggest commands from history and highlight shell syntax. |
-| Prompt | Starship | Show the current directory, Git state, language versions, and command duration. |
+| Prompt | Starship | Show the current directory, Git state, linked worktree name, language versions, and command duration. |
 | Terminal emulator | WezTerm | Provide terminal windows, panes, fonts, transparency, and keyboard shortcuts. |
 | Workspace and session manager | Herdr | Manage terminal sessions and coding agents. |
 | Git worktree manager | Treehouse | Create, lease, and return isolated Git worktrees. |
