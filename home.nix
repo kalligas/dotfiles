@@ -155,5 +155,6 @@ in
   home.file.".config/treehouse" = forceLink ".config/treehouse";
   home.file.".local/bin/kb".source = link ".local/bin/kb";
   home.file.".local/bin/tokcost".source = link ".local/bin/tokcost";
+  home.file.".local/bin/hs".source = link ".local/bin/hs";
   home.file.".hammerspoon/init.lua" = forceLink ".hammerspoon/init.lua";
 }

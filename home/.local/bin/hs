@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# HubSpot CLI is published only on npm. npx caches the pinned version after the
+# first run; bump the version here to upgrade.
+exec npx --yes --package=@hubspot/cli@8.17.0 -- hs "$@"
