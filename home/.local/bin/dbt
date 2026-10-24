@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# dbt Core with the Databricks and Postgres adapters, run through the
+# Nix-managed uvx. uv caches the pinned environment after the first run; bump
+# the versions here to upgrade. dbt-databricks caps dbt-core, so check its
+# requirement on PyPI before bumping dbt-core. --managed-python runs dbt on
+# uv's own Python, because Homebrew's Python can be removed or upgraded.
+exec uvx --managed-python --python 3.12 \
+  --from dbt-core==1.12.5 \
+  --with dbt-databricks==1.12.8 \
+  --with dbt-postgres==1.11.0 \
+  dbt "$@"
