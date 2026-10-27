@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Code status line: branch[*] | dir | model | ctx % | $cost
+# Claude Code status line: br: branch[*] | wt: worktree | s: session dir | mdl: model | ctx: % | cost: $
 input=$(cat)
 
 if command -v jq >/dev/null 2>&1; then
@@ -19,13 +19,15 @@ branch=$(git -C "$cwd" --no-optional-locks symbolic-ref --short HEAD 2>/dev/null
 if [ -n "$branch" ]; then
   dirty=""
   [ -n "$(git -C "$cwd" --no-optional-locks status --porcelain 2>/dev/null | head -n 1)" ] && dirty="*"
-  out="${branch}${dirty}"
+  out="br: ${branch}${dirty}"
 fi
 
 add() { [ -n "$1" ] && { [ -n "$out" ] && out="$out | $1" || out="$1"; }; }
-add "$(basename "$cwd")"
-add "$model"
-[ -n "$ctx" ] && add "$(printf 'ctx %.0f%%' "$ctx")"
-[ -n "$cost" ] && add "$(printf '$%.2f' "$cost")"
+toplevel=$(git -C "$cwd" --no-optional-locks rev-parse --show-toplevel 2>/dev/null)
+[ -n "$toplevel" ] && [ "$toplevel" != "$cwd" ] && add "wt: $(basename "$toplevel")"
+add "s: $(basename "$cwd")"
+[ -n "$model" ] && add "mdl: $model"
+[ -n "$ctx" ] && add "$(printf 'ctx: %.0f%%' "$ctx")"
+[ -n "$cost" ] && add "$(printf 'cost: $%.2f' "$cost")"
 
 printf '%s\n' "$out"
