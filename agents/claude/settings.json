@@ -1,5 +1,4 @@
 {
-  "model": "opus",
   "hooks": {
     "PreToolUse": [
       {
@@ -22,5 +21,18 @@
       "effortLevel": "high"
     }
   },
-  "theme": "auto"
+  "theme": "auto",
+  "permissions": {
+    "additionalDirectories": ["~/.claude/projects", "~/.codex/sessions"],
+    "allow": [
+      "Read(~/.claude/projects/**)",
+      "Read(~/.codex/sessions/**)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh search:*)",
+      "Bash(gh api notifications:*)",
+      "Bash(jq:*)",
+      "Bash(rg:*)"
+    ]
+  }
 }
