@@ -17,6 +17,7 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 - Workflow helpers: Treehouse aliases/functions and Herdr aliases.
 - Herdr help: `h` starts or reattaches, `Ctrl-s ?` shows all bindings, and `docs/herdr.md` has a short cheatsheet.
 - Knowledge-base setup: see `docs/knowledge-base.md` for Obsidian, the `kb` helper, and safe migration boundaries.
+- Scheduled agent tasks: see `docs/scheduled-tasks.md` for the Claude and Codex tasks that fill the Notion Scratchpad and Daily database, how they depend on each other, and how to recreate them.
 
 ## Terminal Stack
 
