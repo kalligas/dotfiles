@@ -40,8 +40,8 @@ Times are Europe/Athens.
 | Task | App and kind | When | Reads | Writes |
 |---|---|---|---|---|
 | Daily briefing | Claude, chat | Weekdays 07:00 | Calendar, Gmail, Slack, ClickUp and GitHub items that mention Mike, recent Granola meetings | A morning brief section in the Scratchpad |
-| Weekly LLM & Agent Engineering Digest | Claude, chat | Mondays 08:30 | The latest `- Weekly summary` page (for this week's focus), and the web: model providers, GitHub, Hacker News, practitioner blogs, Databricks and dbt release notes | `<YYYYMMDD> - Weekly Digest (<LLM name>)` in Daily |
-| Weekly LLM Digest | Codex | Weekly, Mondays | Same as the Claude digest, with the same prompt | A second `- Weekly Digest (<LLM name>)` page in Daily |
+| Weekly LLM & Data Engineering Digest | Claude, chat | Mondays 08:30 | The latest `- Weekly summary` page (for this week's focus), and the web: model providers, GitHub, Hacker News, practitioner blogs, Databricks and dbt release notes | `<YYYYMMDD> - Weekly Digest (<LLM name>)` in Daily |
+| Weekly LLM & Data Engineering Digest | Codex | Weekly, Mondays | Same as the Claude digest, with the same prompt | A second `- Weekly Digest (<LLM name>)` page in Daily |
 | Monday Scratchpad & Daily summaries | Claude, chat | Mondays 10:30 | The digest pages, last week's Daily pages, the Scratchpad | `<YYYYMMDD> - Digest summary` and `<YYYYMMDD> - Weekly summary` in Daily |
 | Recap | Claude, local | Weekdays about 17:00 | Notion, Slack, Gmail, Calendar, Granola, ClickUp, GitHub, Drive, and the local agent transcripts, for every day since the last Recap | The Recap page, and `<YYYYMMDD> - Recap` in Daily |
 | Organize Notion Scratchpad | Claude, chat | Weekdays 19:48 | The Scratchpad | One Daily page per Scratchpad section; then removes the filed sections from the Scratchpad |
