@@ -67,6 +67,7 @@
       "obsidian"
       "openvpn-connect"
       "visual-studio-code"
+      "vlc"
       "wezterm"
       "font-go-mono-nerd-font"
       "font-jetbrains-mono-nerd-font"
