@@ -142,7 +142,7 @@ diff --git a/src/app/git_refresh.rs b/src/app/git_refresh.rs
      }
  
      fn workspace_git_refresh_items(
-@@ -133,6 +200,46 @@
+@@ -133,6 +200,61 @@
      }
  }
  
@@ -169,10 +169,11 @@ diff --git a/src/app/git_refresh.rs b/src/app/git_refresh.rs
 +                        .and_then(|space| space.repo_root.file_name())
 +                        .and_then(|name| name.to_str())
 +                        .map(str::to_string);
-+                    // Outside Git, the repo row shows the directory name instead.
-+                    let repo = space
-+                        .map(|space| space.repo_name)
-+                        .unwrap_or_else(|| crate::workspace::fallback_label_from_cwd(&cwd));
++                    // Outside Git, the repo row shows the working directory instead.
++                    let repo = space.map(|space| space.repo_name).unwrap_or_else(|| {
++                        let home = std::env::var_os("HOME").map(PathBuf::from);
++                        terminal_cwd_label(&cwd, home.as_deref())
++                    });
 +                    crate::terminal::state::TerminalGitContext {
 +                        cwd,
 +                        repo: Some(repo),
@@ -186,10 +187,24 @@ diff --git a/src/app/git_refresh.rs b/src/app/git_refresh.rs
 +        .collect()
 +}
 +
++/// Working directory label for the repo row outside Git, with the home
++/// directory shortened to `~`. A home value must be absolute, because an
++/// empty or relative prefix would match every path.
++fn terminal_cwd_label(cwd: &std::path::Path, home: Option<&std::path::Path>) -> String {
++    match home
++        .filter(|home| home.is_absolute())
++        .and_then(|home| cwd.strip_prefix(home).ok())
++    {
++        Some(rest) if rest.as_os_str().is_empty() => "~".to_string(),
++        Some(rest) => format!("~/{}", rest.display()),
++        None => cwd.display().to_string(),
++    }
++}
++
  fn deduplicate_git_refresh_items(
      items: Vec<WorkspaceGitRefreshItem>,
      cache: &HashMap<PathBuf, GitStatusCacheEntry>,
-@@ -203,6 +310,144 @@
+@@ -203,6 +325,157 @@
  
  #[cfg(test)]
  mod tests {
@@ -266,7 +281,7 @@ diff --git a/src/app/git_refresh.rs b/src/app/git_refresh.rs
 +
 +        // Moving to another directory immediately hides stale identity. A result
 +        // sampled before the move must not restore it. Outside Git, the repo row
-+        // shows the directory name and the branch and worktree rows disappear.
++        // shows the working directory and the branch and worktree rows disappear.
 +        let stale = refresh_terminal_git_contexts(app.terminal_git_refresh_items());
 +        app.state.terminals.get_mut(&ids[1]).unwrap().cwd = outside.clone();
 +        assert!(!app.state.terminals[&ids[1]]
@@ -276,10 +291,23 @@ diff --git a/src/app/git_refresh.rs b/src/app/git_refresh.rs
 +        let results = refresh_terminal_git_contexts(app.terminal_git_refresh_items());
 +        assert!(app.handle_terminal_git_contexts_refreshed(results));
 +        let tokens = app.state.terminals[&ids[1]].sidebar_tokens(None);
-+        assert_eq!(tokens["repo"], "outside");
++        assert_eq!(tokens["repo"], outside.display().to_string());
 +        assert!(!tokens.contains_key("branch"));
 +        assert!(!tokens.contains_key("worktree"));
 +        let _ = std::fs::remove_dir_all(root);
++    }
++
++    #[test]
++    fn dotfiles_agent_cwd_label_shortens_home() {
++        let home = std::path::Path::new("/Users/me");
++        let label = |cwd: &str, home| terminal_cwd_label(std::path::Path::new(cwd), home);
++        assert_eq!(label("/Users/me", Some(home)), "~");
++        assert_eq!(label("/Users/me/Downloads/PR-Order", Some(home)), "~/Downloads/PR-Order");
++        // A sibling whose name starts with the home name is outside home.
++        assert_eq!(label("/Users/meadow/x", Some(home)), "/Users/meadow/x");
++        assert_eq!(label("/tmp/x", Some(home)), "/tmp/x");
++        assert_eq!(label("/tmp/x", Some(std::path::Path::new(""))), "/tmp/x");
++        assert_eq!(label("/tmp/x", None), "/tmp/x");
 +    }
 +
 +    #[test]

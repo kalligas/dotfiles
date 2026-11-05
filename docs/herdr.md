@@ -184,9 +184,10 @@ the worktree's checkout folder name. For example, an agent in a
 its branch, and `dotfiles-review`.
 A directory change hides the previous labels until fresh results arrive.
 Outside a Git repository, the repository row shows the working directory's
-folder name, or `~` for the home directory, and the branch and worktree rows
-disappear. For example, an agent started in `~/Downloads/PR-Order` shows
-`PR-Order` in pale blue. A detached HEAD omits the branch. Terminal titles remain task labels.
+full path with the home directory shortened to `~`, and the branch and worktree
+rows disappear. For example, an agent started in
+`/Users/wikifarmer/Downloads/PR-Order` shows `~/Downloads/PR-Order` in pale
+blue. A path longer than the sidebar ends in `…`. A detached HEAD omits the branch. Terminal titles remain task labels.
 
 The same patch renders inactive numbered tabs with the normal light foreground
 and removes dimming. Inactive tabs keep the terminal's transparent background.
