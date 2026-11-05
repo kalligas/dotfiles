@@ -9,7 +9,7 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 - Claude Code: installed by `bootstrap.sh` with the official native installer into `~/.local/bin`, not Nix. The native install updates itself, and a second Nix copy would share the same Keychain login, which can cause repeated logouts.
 - Codex: installed as a Homebrew cask, not Nix. Codex releases about weekly, and a Homebrew install can be upgraded in place from Codex's own update prompt or with `brew upgrade --cask codex`, while a Nix install waits for nixpkgs and needs a rebuild.
 - Antigravity CLI: Google's terminal agent, installed as the Homebrew cask `antigravity-cli`, which provides the `agy` command. Run `agy` and sign in with a personal Google account to chat on Google's $0 individual plan, which has weekly rate limits and needs no API key. Antigravity CLI replaces Gemini CLI because Google ended Gemini CLI sign-in for personal accounts on June 18, 2026. Free plans may use prompts to improve Google's models, so do not paste secrets or work-confidential text into it.
-- Nix user packages: Neovim, Starship, Herdr, Node.js/npm/npx, ripgrep, fd, fzf, jq, lazygit, yazi, lsd, vivid, bat, delta, tree-sitter, and uv.
+- Nix user packages: Neovim, Starship, Herdr, Node.js/npm/npx, ripgrep, fd, fzf, jq, lazygit, yazi, lsd, vivid, bat, delta, tree-sitter, uv, lychee, and pre-commit.
 - HubSpot CLI: the `hs` command in `home/.local/bin/hs` runs a pinned `@hubspot/cli` version through the Nix-managed `npx`, because HubSpot publishes the CLI only on npm and Nix's Node.js cannot install global npm packages. Change the version in that script to upgrade. Run `hs account auth` once to sign in. The wrapper sits earlier on PATH than `/opt/homebrew/bin/hs`, so `hs` runs HubSpot CLI instead of the Hammerspoon command-line tool; call Hammerspoon's tool by its full path if needed.
 - dbt Core: the `dbt` command in `home/.local/bin/dbt` runs pinned versions of `dbt-core`, `dbt-databricks`, and `dbt-postgres` through the Nix-managed `uvx`, because nixpkgs does not package `dbt-databricks`. Change the versions in that script to upgrade, and check that the new `dbt-databricks` release allows the new `dbt-core` version first, because `dbt-databricks` sets an upper limit on `dbt-core`. The first run downloads the packages, and later runs use uv's cache. A project that pins its own dbt in a uv environment, such as one run with `uv run dbt`, keeps using that pinned version.
 - Terminal/editor style: Cyberdream dark palette, blurred/translucent WezTerm, transparent Neovim, glass-friendly Herdr.
@@ -34,7 +34,7 @@ Personal Cyberdream dev setup managed with nix-darwin, Home Manager, and a small
 | Theme | Cyberdream | Keep a consistent color palette across the terminal, editor, and CLI tools. |
 | Package and configuration managers | Nix, nix-darwin, Home Manager, Homebrew | Install tools and configure macOS declaratively. |
 | Coding agents | Codex, Claude Code, Antigravity CLI | Provide AI-assisted development workflows and terminal chat. |
-| CLI utilities | Bat, Delta, fd, fzf, jq, LazyGit, LSD, ripgrep, Tree-sitter, uv, Vivid, Yazi | Improve file viewing, search, Git, JSON processing, syntax parsing, Python project management, colors, and navigation. |
+| CLI utilities | Bat, Delta, fd, fzf, jq, LazyGit, LSD, lychee, pre-commit, ripgrep, Tree-sitter, uv, Vivid, Yazi | Improve file viewing, search, Git, JSON processing, link checking, Git commit hooks, syntax parsing, Python project management, colors, and navigation. |
 
 ## Shortcut Reference
 

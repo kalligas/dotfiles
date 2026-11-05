@@ -30,8 +30,10 @@ in
     jq
     lazygit
     lsd
+    lychee
     neovim
     nodejs
+    pre-commit
     ripgrep
     starship
     terraform
