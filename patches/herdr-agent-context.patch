@@ -142,7 +142,7 @@ diff --git a/src/app/git_refresh.rs b/src/app/git_refresh.rs
      }
  
      fn workspace_git_refresh_items(
-@@ -133,6 +200,42 @@
+@@ -133,6 +200,46 @@
      }
  }
  
@@ -169,9 +169,13 @@ diff --git a/src/app/git_refresh.rs b/src/app/git_refresh.rs
 +                        .and_then(|space| space.repo_root.file_name())
 +                        .and_then(|name| name.to_str())
 +                        .map(str::to_string);
++                    // Outside Git, the repo row shows the directory name instead.
++                    let repo = space
++                        .map(|space| space.repo_name)
++                        .unwrap_or_else(|| crate::workspace::fallback_label_from_cwd(&cwd));
 +                    crate::terminal::state::TerminalGitContext {
 +                        cwd,
-+                        repo: space.map(|space| space.repo_name),
++                        repo: Some(repo),
 +                        branch,
 +                        worktree,
 +                    }
@@ -185,7 +189,7 @@ diff --git a/src/app/git_refresh.rs b/src/app/git_refresh.rs
  fn deduplicate_git_refresh_items(
      items: Vec<WorkspaceGitRefreshItem>,
      cache: &HashMap<PathBuf, GitStatusCacheEntry>,
-@@ -203,6 +306,143 @@
+@@ -203,6 +310,144 @@
  
  #[cfg(test)]
  mod tests {
@@ -261,7 +265,8 @@ diff --git a/src/app/git_refresh.rs b/src/app/git_refresh.rs
 +        );
 +
 +        // Moving to another directory immediately hides stale identity. A result
-+        // sampled before the move must not restore it, and non-Git clears it.
++        // sampled before the move must not restore it. Outside Git, the repo row
++        // shows the directory name and the branch and worktree rows disappear.
 +        let stale = refresh_terminal_git_contexts(app.terminal_git_refresh_items());
 +        app.state.terminals.get_mut(&ids[1]).unwrap().cwd = outside.clone();
 +        assert!(!app.state.terminals[&ids[1]]
@@ -271,7 +276,7 @@ diff --git a/src/app/git_refresh.rs b/src/app/git_refresh.rs
 +        let results = refresh_terminal_git_contexts(app.terminal_git_refresh_items());
 +        assert!(app.handle_terminal_git_contexts_refreshed(results));
 +        let tokens = app.state.terminals[&ids[1]].sidebar_tokens(None);
-+        assert!(!tokens.contains_key("repo"));
++        assert_eq!(tokens["repo"], "outside");
 +        assert!(!tokens.contains_key("branch"));
 +        assert!(!tokens.contains_key("worktree"));
 +        let _ = std::fs::remove_dir_all(root);
