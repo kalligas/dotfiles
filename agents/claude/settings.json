@@ -8,7 +8,9 @@
       "Bash(gh search:*)",
       "Bash(gh api notifications:*)",
       "Bash(jq:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "mcp__clickup__clickup_create_comment",
+      "mcp__clickup__clickup_update_task"
     ],
     "additionalDirectories": [
       "~/.claude/projects",
