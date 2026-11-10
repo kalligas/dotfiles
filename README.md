@@ -136,6 +136,20 @@ After the first setup, edit files in this repo and apply changes with:
 ./rebuild.sh
 ```
 
+## Mail at Login
+
+Home Manager opens Apple Mail in the background at login. Quitting Mail leaves
+Mail closed until the next login. A rebuild also loads the login agent.
+
+Each rebuild restores Mail's notification settings captured on macOS 27.0.1:
+notifications on Desktop, in Notification Center, and on the Lock Screen;
+persistent alerts; badges enabled; default previews; automatic grouping; and
+notification summaries enabled. `scripts/mail-notifications.py` merges Mail's
+settings into the current preferences and preserves other apps' settings.
+Apple uses undocumented notification flags, so check the Notifications pane
+after a major macOS upgrade. Mail must already have a notification entry;
+on a new Mac, open Mail and enable notifications before rebuilding.
+
 ## Token Usage Monitor
 
 Node.js, npm, and npx are installed through Home Manager. Start Tokscale with:

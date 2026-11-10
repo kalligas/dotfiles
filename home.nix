@@ -57,6 +57,19 @@ in
 
   programs.home-manager.enable = true;
 
+  # Open Mail once per login. Quitting Mail does not cause it to reopen.
+  launchd.agents.mail = {
+    enable = true;
+    config = {
+      ProgramArguments = [ "/usr/bin/open" "-g" "-a" "/System/Applications/Mail.app" ];
+      RunAtLoad = true;
+    };
+  };
+
+  home.activation.mailNotifications = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    run ${pkgs.python3}/bin/python3 ${./scripts/mail-notifications.py}
+  '';
+
   programs.git = {
     enable = true;
     # Written to ~/.config/git/ignore, which Git reads in every repository.
