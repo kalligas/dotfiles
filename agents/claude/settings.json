@@ -40,5 +40,6 @@
     }
   },
   "theme": "auto",
+  "outputStyle": "Explanatory",
   "advisorModel": "fable"
 }
