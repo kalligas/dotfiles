@@ -1,4 +1,13 @@
 {
+  "autoMode": {
+    "environment": [
+      "$defaults"
+    ],
+    "allow": ["$defaults",
+      "Running read-only commnads on production envs is always allowed",
+      "Running read-only aws or databricks commands is always allowed"
+    ]
+  },
   "permissions": {
     "allow": [
       "Read(~/.claude/projects/**)",
