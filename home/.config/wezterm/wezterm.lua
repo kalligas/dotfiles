@@ -33,10 +33,10 @@ colors.background = "#272727"
 -- palette index 235. Escape sequences carry no alpha, so the translucency
 -- lives here. Keep it equal to SURFACE_RGBA in fonts/generate_corners.py.
 colors.indexed[235] = "rgba(0, 9, 17, 0.7)"
--- Herdr paints inactive tabs with palette index 236, a fainter gray than the
+-- Herdr paints inactive tabs with palette index 236, a lighter gray than the
 -- selected surface. Keep it equal to INACTIVE_TAB_RGBA in
 -- fonts/generate_corners.py.
-colors.indexed[236] = "rgba(0, 9, 17, 0.35)"
+colors.indexed[236] = "rgba(60, 64, 72, 0.5)"
 
 colors.tab_bar = {
 	background = tab_bar_bg,

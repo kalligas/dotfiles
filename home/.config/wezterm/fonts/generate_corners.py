@@ -21,9 +21,9 @@ from fontTools.pens.ttGlyphPen import TTGlyphPen
 # translucent surface gray as a color layer. Keep it equal to palette index
 # 235 in wezterm.lua, which fills the rest of each selected surface.
 SURFACE_RGBA = (0, 9, 17, 179)
-# Inactive tabs use a fainter gray. Keep it equal to palette index 236 in
+# Inactive tabs use a lighter gray. Keep it equal to palette index 236 in
 # wezterm.lua, which fills the rest of each inactive tab.
-INACTIVE_TAB_RGBA = (0, 9, 17, 89)
+INACTIVE_TAB_RGBA = (60, 64, 72, 128)
 # CPAL palette entries, in the order the color layers refer to them.
 PALETTE = [SURFACE_RGBA, INACTIVE_TAB_RGBA]
 # Far enough below the cell that the crop error stays under 0.05 px.
@@ -115,7 +115,7 @@ def build_font(span, family, ps_family):
     # One-row tabs need both top and bottom curves in each end cell.
     # Use plane-16 private-use characters to avoid Nerd Font icon ranges.
     # U+10F000 and U+10F001 end the selected tab, and U+10F002 and U+10F003
-    # end the inactive tabs in the fainter gray.
+    # end the inactive tabs in the lighter gray.
     tab_caps = [
         (0x10F000, False, 0),
         (0x10F001, True, 0),

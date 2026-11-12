@@ -203,13 +203,14 @@ tab padding. Tab widths, spacing, and mouse targets stay the same. The
 area, outside the Nerd Font icon ranges. The package build also checks selected
 and inactive tab styles, selection changes, narrow tabs, and wide labels.
 
-Inactive tabs use a fainter translucent gray, `rgba(0, 9, 17, 0.35)`, half the
-opacity of the selected surface, so the tabs stand apart from the empty tab bar
-while the selected tab stays the darkest. Inactive tabs have the same rounded
+Inactive tabs use a lighter translucent gray, `rgba(60, 64, 72, 0.5)`, so the
+tabs stand apart from both the empty tab bar and the near-black selected tab.
+A fainter copy of the selected surface's near-black looked the same as the
+selected tab over the dark window. Inactive tabs have the same rounded
 ends, regular-weight labels, and padding as the selected tab. Herdr paints
 inactive tabs with palette index 236, and `home/.config/wezterm/wezterm.lua`
-maps index 236 to the fainter gray. The font supplies the inactive tab ends as
-U+10F002 and U+10F003 in the fainter gray, so `INACTIVE_TAB_RGBA` in
+maps index 236 to the lighter gray. The font supplies the inactive tab ends as
+U+10F002 and U+10F003 in the lighter gray, so `INACTIVE_TAB_RGBA` in
 `home/.config/wezterm/fonts/generate_corners.py` must match the index 236
 entry. Applications that use palette index 236 as a background also become
 translucent. The patch `patches/herdr-inactive-tab-surface.patch` adds the
