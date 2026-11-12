@@ -2,7 +2,7 @@
 # requires-python = ">=3.10"
 # dependencies = ["fonttools==4.67.0"]
 # ///
-"""Generate circular pane corners and tab caps for Herdr's selected surfaces.
+"""Generate circular pane corners and tab caps for Herdr's surfaces.
 
 Run with: uv run generate_corners.py [--check]
 Writes one font per display density; see FONTS.
@@ -21,6 +21,11 @@ from fontTools.pens.ttGlyphPen import TTGlyphPen
 # translucent surface gray as a color layer. Keep it equal to palette index
 # 235 in wezterm.lua, which fills the rest of each selected surface.
 SURFACE_RGBA = (0, 9, 17, 179)
+# Inactive tabs use a fainter gray. Keep it equal to palette index 236 in
+# wezterm.lua, which fills the rest of each inactive tab.
+INACTIVE_TAB_RGBA = (0, 9, 17, 89)
+# CPAL palette entries, in the order the color layers refer to them.
+PALETTE = [SURFACE_RGBA, INACTIVE_TAB_RGBA]
 # Far enough below the cell that the crop error stays under 0.05 px.
 CROP_PIXEL_Y = -30000
 # WezTerm rounds cells up to whole pixels: 15 px wide at 25 px per em on 2x
@@ -34,13 +39,13 @@ FONTS = [
 ]
 
 
-def surface_layer_color():
+def surface_layer_color(rgba):
     # FreeType premultiplies color glyphs and WezTerm blends them as straight
     # alpha. Dividing by alpha cancels the extra multiply, so no channel may
     # exceed alpha.
-    *rgb, alpha = SURFACE_RGBA
+    *rgb, alpha = rgba
     if max(rgb) > alpha:
-        raise ValueError("SURFACE_RGBA channels must not exceed its alpha")
+        raise ValueError(f"{rgba} channels must not exceed its alpha")
     return tuple(channel / alpha for channel in rgb) + (alpha / 255,)
 
 
@@ -76,6 +81,8 @@ def build_font(span, family, ps_family):
     }
     glyphs = {".notdef": TTGlyphPen(None).glyph()}
     cmap = {}
+    # Palette entry of each glyph's color layer; see PALETTE.
+    palette_index = {}
     for codepoint, (mirror_x, mirror_y) in corners.items():
         name = f"u{codepoint:X}"
         target = TTGlyphPen(None)
@@ -103,10 +110,19 @@ def build_font(span, family, ps_family):
         add_crop_pixel(target, span)
         glyphs[name] = target.glyph()
         cmap[codepoint] = name
+        palette_index[name] = 0
 
     # One-row tabs need both top and bottom curves in each end cell.
     # Use plane-16 private-use characters to avoid Nerd Font icon ranges.
-    for codepoint, mirror_x in [(0x10F000, False), (0x10F001, True)]:
+    # U+10F000 and U+10F001 end the selected tab, and U+10F002 and U+10F003
+    # end the inactive tabs in the fainter gray.
+    tab_caps = [
+        (0x10F000, False, 0),
+        (0x10F001, True, 0),
+        (0x10F002, False, 1),
+        (0x10F003, True, 1),
+    ]
+    for codepoint, mirror_x, color in tab_caps:
         name = f"u{codepoint:X}"
         target = TTGlyphPen(None)
         pen = TransformPen(
@@ -129,12 +145,13 @@ def build_font(span, family, ps_family):
         add_crop_pixel(target, span)
         glyphs[name] = target.glyph()
         cmap[codepoint] = name
+        palette_index[name] = color
 
-    # Each mapped glyph paints an identical outline layer in the surface gray.
+    # Each mapped glyph paints an identical outline layer in its surface gray.
     layers = {}
     for name in cmap.values():
         glyphs[f"{name}.fill"] = glyphs[name]
-        layers[name] = [(f"{name}.fill", 0)]
+        layers[name] = [(f"{name}.fill", palette_index[name])]
 
     builder = FontBuilder(1000, isTTF=True)
     builder.setupGlyphOrder(list(glyphs))
@@ -142,16 +159,16 @@ def build_font(span, family, ps_family):
     builder.setupGlyf(glyphs)
     builder.setupHorizontalMetrics({name: (width, 0) for name in glyphs})
     builder.setupCOLR(layers, version=0)
-    builder.setupCPAL([[surface_layer_color()]])
+    builder.setupCPAL([[surface_layer_color(rgba) for rgba in PALETTE]])
     builder.setupHorizontalHeader(ascent=metric_top, descent=metric_bottom)
     builder.setupNameTable(
         {
             "familyName": family,
             "styleName": "Regular",
-            "uniqueFontIdentifier": f"{ps_family}-1.7",
+            "uniqueFontIdentifier": f"{ps_family}-1.8",
             "fullName": f"{family} Regular",
             "psName": f"{ps_family}-Regular",
-            "version": "Version 1.7",
+            "version": "Version 1.8",
         }
     )
     builder.setupOS2(

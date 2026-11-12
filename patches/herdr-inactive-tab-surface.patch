@@ -1,0 +1,133 @@
+diff --git a/src/ui/tabs.rs b/src/ui/tabs.rs
+--- a/src/ui/tabs.rs
++++ b/src/ui/tabs.rs
+@@ -1,6 +1,6 @@
+ use ratatui::{
+     layout::Rect,
+-    style::{Modifier, Style},
++    style::{Color, Modifier, Style},
+     widgets::Paragraph,
+     Frame,
+ };
+@@ -13,6 +13,13 @@
+ // Private-use glyphs supplied by the Herdr Rounded UI fallback font.
+ const ACTIVE_TAB_LEFT_CAP: &str = "\u{10f000}";
+ const ACTIVE_TAB_RIGHT_CAP: &str = "\u{10f001}";
++const INACTIVE_TAB_LEFT_CAP: &str = "\u{10f002}";
++const INACTIVE_TAB_RIGHT_CAP: &str = "\u{10f003}";
++
++// Inactive tabs sit on a fainter surface than the selected tab, so they stand
++// apart from the empty tab bar. WezTerm maps this palette index to a
++// translucent gray, as it maps the selected surface's index.
++const INACTIVE_TAB_BACKGROUND: Color = Color::Indexed(236);
+ 
+ const MIN_TAB_WIDTH: u16 = 8;
+ const NEW_TAB_WIDTH: u16 = 3;
+@@ -395,20 +402,28 @@
+             continue;
+         }
+         let active = idx == ws.active_tab;
++        let (surface, left_cap, right_cap) = if active {
++            (FOCUSED_PANE_BACKGROUND, ACTIVE_TAB_LEFT_CAP, ACTIVE_TAB_RIGHT_CAP)
++        } else {
++            (
++                INACTIVE_TAB_BACKGROUND,
++                INACTIVE_TAB_LEFT_CAP,
++                INACTIVE_TAB_RIGHT_CAP,
++            )
++        };
+         let style = if active {
+             Style::default()
+                 .fg(p.overlay1)
+-                .bg(FOCUSED_PANE_BACKGROUND)
++                .bg(surface)
+                 .add_modifier(Modifier::BOLD)
+         } else {
+-            Style::default().fg(p.overlay1).bg(p.surface0)
++            Style::default().fg(p.overlay1).bg(surface)
+         };
+         let name = tab_chrome_label(ws, idx);
+         let name_width = display_width_u16(&name);
+         // An odd spare cell cannot be split equally. Leave it outside the
+-        // selected surface, keeping tab positions and mouse targets stable.
+-        let rect = if active
+-            && rect.width > name_width.saturating_add(2)
++        // tab's surface, keeping tab positions and mouse targets stable.
++        let rect = if rect.width > name_width.saturating_add(2)
+             && (rect.width - name_width) % 2 == 1
+         {
+             Rect {
+@@ -420,7 +435,7 @@
+         };
+         // Caps stay inside the existing padding and click target. Clip the
+         // label inside them so wide characters cannot overwrite either cap.
+-        let rounded = active && rect.width >= 3;
++        let rounded = rect.width >= 3;
+         let label_rect = if rounded {
+             Rect::new(rect.x + 1, rect.y, rect.width - 2, 1)
+         } else {
+@@ -437,12 +452,12 @@
+         );
+         frame.render_widget(Paragraph::new(text).style(style), label_rect);
+         if rounded {
+-            let cap_style = Style::default().fg(FOCUSED_PANE_BACKGROUND).bg(p.panel_bg);
++            let cap_style = Style::default().fg(surface).bg(p.panel_bg);
+             frame.buffer_mut()[(rect.x, rect.y)]
+-                .set_symbol(ACTIVE_TAB_LEFT_CAP)
++                .set_symbol(left_cap)
+                 .set_style(cap_style);
+             frame.buffer_mut()[(rect.right() - 1, rect.y)]
+-                .set_symbol(ACTIVE_TAB_RIGHT_CAP)
++                .set_symbol(right_cap)
+                 .set_style(cap_style);
+         }
+     }
+@@ -555,10 +570,14 @@
+             let rect = app.view.tab_hit_areas[idx];
+             let text = buffer_row_text(buffer, rect, rect.y);
+             assert!(text.contains(expected), "{text:?}");
+-            for x in rect.x..rect.x + rect.width {
++            let end = (rect.x..rect.right())
++                .find(|x| buffer[(*x, rect.y)].symbol() == INACTIVE_TAB_RIGHT_CAP)
++                .unwrap();
++            assert_eq!(buffer[(rect.x, rect.y)].symbol(), INACTIVE_TAB_LEFT_CAP);
++            for x in rect.x + 1..end {
+                 let style = buffer[(x, rect.y)].style();
+                 assert_eq!(style.fg, Some(app.palette.overlay1));
+-                assert_eq!(style.bg, Some(app.palette.surface0));
++                assert_eq!(style.bg, Some(INACTIVE_TAB_BACKGROUND));
+                 assert!(!style.add_modifier.contains(Modifier::DIM));
+             }
+         }
+@@ -614,11 +633,28 @@
+                             assert!(cell.modifier.contains(Modifier::BOLD));
+                         }
+                     } else {
++                        let right_cap = (rect.x..rect.right())
++                            .find(|x| buffer[(*x, 0)].symbol() == INACTIVE_TAB_RIGHT_CAP)
++                            .unwrap();
++                        for (x, symbol) in [
++                            (rect.x, INACTIVE_TAB_LEFT_CAP),
++                            (right_cap, INACTIVE_TAB_RIGHT_CAP),
++                        ] {
++                            let cell = &buffer[(x, 0)];
++                            assert_eq!(cell.symbol(), symbol);
++                            assert_eq!(display_width_u16(symbol), 1);
++                            assert_eq!(cell.fg, INACTIVE_TAB_BACKGROUND);
++                            assert_eq!(cell.bg, panel_bg);
++                        }
++                        for x in rect.x + 1..right_cap {
++                            let cell = &buffer[(x, 0)];
++                            assert_eq!(cell.bg, INACTIVE_TAB_BACKGROUND);
++                            assert_eq!(cell.fg, app.palette.overlay1);
++                            assert!(!cell.modifier.contains(Modifier::BOLD));
++                            assert!(!cell.modifier.contains(Modifier::DIM));
++                        }
+                         for x in rect.x..rect.right() {
+                             let cell = &buffer[(x, 0)];
+-                            assert_eq!(cell.bg, app.palette.surface0);
+-                            assert_eq!(cell.fg, app.palette.overlay1);
+-                            assert!(!cell.modifier.contains(Modifier::DIM));
+                             assert_ne!(cell.symbol(), ACTIVE_TAB_LEFT_CAP);
+                             assert_ne!(cell.symbol(), ACTIVE_TAB_RIGHT_CAP);
+                         }

@@ -12,6 +12,7 @@ herdr.overrideAttrs (old: {
     ../patches/herdr-tab-bar-gap.patch
     ../patches/herdr-translucent-surfaces.patch
     ../patches/herdr-single-pane-background.patch
+    ../patches/herdr-inactive-tab-surface.patch
   ];
   doCheck = true;
   cargoTestFlags = [ "--bin" "herdr" "dotfiles_" ];

@@ -190,7 +190,7 @@ rows disappear. For example, an agent started in
 blue. A path longer than the sidebar ends in `…`. A detached HEAD omits the branch. Terminal titles remain task labels.
 
 The same patch renders inactive numbered tabs with the normal light foreground
-and removes dimming. Inactive tabs keep the terminal's transparent background.
+and removes dimming.
 The package build checks per-agent identities, branch and directory changes,
 linked worktrees, stale results, configured label colors, and inactive tab
 readability alongside the pane appearance checks.
@@ -202,6 +202,18 @@ tab padding. Tab widths, spacing, and mouse targets stay the same. The
 `Herdr Rounded UI` font supplies two end glyphs in Unicode's plane-16 private-use
 area, outside the Nerd Font icon ranges. The package build also checks selected
 and inactive tab styles, selection changes, narrow tabs, and wide labels.
+
+Inactive tabs use a fainter translucent gray, `rgba(0, 9, 17, 0.35)`, half the
+opacity of the selected surface, so the tabs stand apart from the empty tab bar
+while the selected tab stays the darkest. Inactive tabs have the same rounded
+ends, regular-weight labels, and padding as the selected tab. Herdr paints
+inactive tabs with palette index 236, and `home/.config/wezterm/wezterm.lua`
+maps index 236 to the fainter gray. The font supplies the inactive tab ends as
+U+10F002 and U+10F003 in the fainter gray, so `INACTIVE_TAB_RGBA` in
+`home/.config/wezterm/fonts/generate_corners.py` must match the index 236
+entry. Applications that use palette index 236 as a background also become
+translucent. The patch `patches/herdr-inactive-tab-surface.patch` adds the
+inactive surface.
 
 The patch `patches/herdr-rounded-sidebar.patch` gives active Spaces and Agents
 entries the same gray background and rounded corners. Multirow entries use
