@@ -1,13 +1,4 @@
 {
-  "autoMode": {
-    "environment": [
-      "$defaults"
-    ],
-    "allow": ["$defaults",
-      "Running read-only commnads on production envs is always allowed",
-      "Running read-only aws or databricks commands is always allowed"
-    ]
-  },
   "permissions": {
     "allow": [
       "Read(~/.claude/projects/**)",
@@ -19,36 +10,45 @@
       "Bash(jq:*)",
       "Bash(rg:*)",
       "mcp__clickup__clickup_create_comment",
+      "mcp__clickup__clickup_create_task_comment",
       "mcp__clickup__clickup_update_task"
+    ],
+    "ask": [
+      "Bash(databricks bundle deploy *)",
+      "Bash(databricks bundle run *)",
+      "Bash(terraform apply *)",
+      "Bash(gh pr merge *)",
+      "Bash(gh workflow run *)"
     ],
     "additionalDirectories": [
       "~/.claude/projects",
       "~/.codex/sessions"
     ]
   },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "rtk hook claude"
-          }
-        ]
-      }
-    ]
-  },
   "statusLine": {
     "type": "command",
     "command": "bash /Users/wikifarmer/dotfiles/agents/claude/statusline.sh"
   },
+  "outputStyle": "Explanatory",
   "modelSettings": {
     "claude-opus-5-5": {
       "effortLevel": "high"
     }
   },
+  "advisorModel": "fable",
   "theme": "auto",
-  "outputStyle": "Explanatory",
-  "advisorModel": "fable"
+  "autoMode": {
+    "environment": [
+      "$defaults",
+      "Source control: the GitHub org that owns the repo the session started in, and every repo under that org, are trusted. Repos under the user's personal GitHub account are trusted too.",
+      "Org-specific CLIs: `databricks` (bundles, jobs, and the SQL statements API), `gh`, `uv run dbt`, and `rtk`. `rtk` runs the command it wraps and only shortens that command's output, so `rtk git status` does what `git status` does."
+    ],
+    "allow": [
+      "$defaults",
+      "Read-only inspection of cloud and data platform accounts is allowed: `aws ... describe-*` and `list-*` commands, `aws s3 ls`, `databricks` list and get commands for jobs, pipelines, warehouses, tables, and volumes, and `databricks bundle validate`. This rule does not cover reading secret values (for example `databricks secrets get-secret` or `aws secretsmanager get-secret-value`), creating presigned URLs, or downloading file contents.",
+      "Read-only SQL on a production data warehouse catalog is allowed: SELECT, SHOW, DESCRIBE, and EXPLAIN statements, for example through `databricks api post /api/2.0/sql/statements` or `dbt show`, to check row counts, schemas, and sample rows. This rule does not cover DDL or DML, statements that call billable AI functions such as ai_query, or queries that return personal data.",
+      "Force-pushing with `--force-with-lease` to a feature branch of the user's own open pull request after a rebase is allowed. Feature branches have names such as `feat/...`, `fix/...`, `refactor/...`, `docs/...`, or `chore/...`. This rule never covers the repository's default branch."
+    ]
+  },
+  "model": "fable"
 }

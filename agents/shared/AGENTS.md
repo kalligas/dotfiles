@@ -28,9 +28,9 @@ and `~/.codex/AGENTS.md` are symlinks to it.
 
 - In the shell, prefer `rg` and `fd` over `grep -r` and `find`.
 - rtk (Rust Token Killer, github.com/rtk-ai/rtk) shortens noisy shell output.
-  In Claude Code, a hook routes shell commands through rtk automatically. In
-  Codex, which has no hook, prefix noisy commands with `rtk` yourself, for
-  example `rtk git status`.
+  Prefix noisy commands with `rtk` yourself, for example `rtk git status`.
+  No hook adds `rtk` for you, because Claude Code auto mode refuses a call
+  that a hook rewrote after auto mode reviewed it.
 - If rtk is missing, report that instead of installing it or running
   `rtk init`, because rtk is installed declaratively and an ad-hoc install
   would drift from that setup.
