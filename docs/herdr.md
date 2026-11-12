@@ -83,6 +83,13 @@ A tab with one pane also shades that pane, so every tab shows the same focused
 surface. The patch `patches/herdr-single-pane-background.patch` extends the
 shading to single-pane tabs.
 
+Unfocused panes use a lighter translucent gray, `rgba(60, 64, 72, 0.5)`, so
+every pane has a visible rounded surface and the focused pane stays the
+darkest. Herdr paints unfocused panes with palette index 236, the same index
+that inactive tabs use. The font supplies the unfocused pane corners as
+U+10F004 to U+10F007 in the lighter gray. The patch
+`patches/herdr-inactive-pane-surface.patch` adds the unfocused surface.
+
 The translucent near-black is `rgba(0, 9, 17, 0.7)`, so WezTerm's blurred window
 background shows through the focused pane. The WezTerm window background is
 `#3d3d3d` at 0.70 opacity, lighter than the selected surfaces, so the focused
@@ -112,7 +119,7 @@ The blank row keeps the selected tab from touching the shaded pane. The patch
 `patches/herdr-translucent-surfaces.patch` switches the surfaces to palette
 index 235.
 
-WezTerm loads the four pane corners and two rounded tab ends from
+WezTerm loads the pane corners and rounded tab ends from
 `home/.config/wezterm/fonts/HerdrPaneCorners.ttf`. The small font contains
 original outlines with JetBrains Mono's cell metrics. Each curve has equal
 horizontal and vertical radii; the four corners mirror the same circular shape.
@@ -205,12 +212,11 @@ and inactive tab styles, selection changes, narrow tabs, and wide labels.
 
 Inactive tabs use a lighter translucent gray, `rgba(60, 64, 72, 0.5)`, so the
 tabs stand apart from both the empty tab bar and the near-black selected tab.
-A fainter copy of the selected surface's near-black looked the same as the
-selected tab over the dark window. Inactive tabs have the same rounded
+Inactive tabs have the same rounded
 ends, regular-weight labels, and padding as the selected tab. Herdr paints
 inactive tabs with palette index 236, and `home/.config/wezterm/wezterm.lua`
 maps index 236 to the lighter gray. The font supplies the inactive tab ends as
-U+10F002 and U+10F003 in the lighter gray, so `INACTIVE_TAB_RGBA` in
+U+10F002 and U+10F003 in the lighter gray, so `INACTIVE_SURFACE_RGBA` in
 `home/.config/wezterm/fonts/generate_corners.py` must match the index 236
 entry. Applications that use palette index 236 as a background also become
 translucent. The patch `patches/herdr-inactive-tab-surface.patch` adds the

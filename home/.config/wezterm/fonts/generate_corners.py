@@ -21,11 +21,12 @@ from fontTools.pens.ttGlyphPen import TTGlyphPen
 # translucent surface gray as a color layer. Keep it equal to palette index
 # 235 in wezterm.lua, which fills the rest of each selected surface.
 SURFACE_RGBA = (0, 9, 17, 179)
-# Inactive tabs use a lighter gray. Keep it equal to palette index 236 in
-# wezterm.lua, which fills the rest of each inactive tab.
-INACTIVE_TAB_RGBA = (60, 64, 72, 128)
+# Unfocused panes and inactive tabs use a lighter gray. Keep it equal to
+# palette index 236 in wezterm.lua, which fills the rest of each inactive
+# surface.
+INACTIVE_SURFACE_RGBA = (60, 64, 72, 128)
 # CPAL palette entries, in the order the color layers refer to them.
-PALETTE = [SURFACE_RGBA, INACTIVE_TAB_RGBA]
+PALETTE = [SURFACE_RGBA, INACTIVE_SURFACE_RGBA]
 # Far enough below the cell that the crop error stays under 0.05 px.
 CROP_PIXEL_Y = -30000
 # WezTerm rounds cells up to whole pixels: 15 px wide at 25 px per em on 2x
@@ -73,17 +74,23 @@ def build_font(span, family, ps_family):
     curve_bottom = top - radius
     # Mirror one circular corner into all four positions. Keep equal radii
     # even though the terminal cell is much taller than it is wide.
+    # U+1FBEC to U+1FBEF round the focused pane in the selected gray, and
+    # U+10F004 to U+10F007 round unfocused panes in the lighter gray.
     corners = {
-        0x1FBEE: (False, False),
-        0x1FBED: (True, False),
-        0x1FBEC: (False, True),
-        0x1FBEF: (True, True),
+        0x1FBEE: (False, False, 0),
+        0x1FBED: (True, False, 0),
+        0x1FBEC: (False, True, 0),
+        0x1FBEF: (True, True, 0),
+        0x10F004: (False, False, 1),
+        0x10F005: (True, False, 1),
+        0x10F006: (False, True, 1),
+        0x10F007: (True, True, 1),
     }
     glyphs = {".notdef": TTGlyphPen(None).glyph()}
     cmap = {}
     # Palette entry of each glyph's color layer; see PALETTE.
     palette_index = {}
-    for codepoint, (mirror_x, mirror_y) in corners.items():
+    for codepoint, (mirror_x, mirror_y, color) in corners.items():
         name = f"u{codepoint:X}"
         target = TTGlyphPen(None)
         pen = TransformPen(
@@ -110,7 +117,7 @@ def build_font(span, family, ps_family):
         add_crop_pixel(target, span)
         glyphs[name] = target.glyph()
         cmap[codepoint] = name
-        palette_index[name] = 0
+        palette_index[name] = color
 
     # One-row tabs need both top and bottom curves in each end cell.
     # Use plane-16 private-use characters to avoid Nerd Font icon ranges.
@@ -165,10 +172,10 @@ def build_font(span, family, ps_family):
         {
             "familyName": family,
             "styleName": "Regular",
-            "uniqueFontIdentifier": f"{ps_family}-1.8",
+            "uniqueFontIdentifier": f"{ps_family}-1.9",
             "fullName": f"{family} Regular",
             "psName": f"{ps_family}-Regular",
-            "version": "Version 1.8",
+            "version": "Version 1.9",
         }
     )
     builder.setupOS2(

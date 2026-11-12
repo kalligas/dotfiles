@@ -1,0 +1,198 @@
+diff --git a/src/server/headless.rs b/src/server/headless.rs
+index 7f84f6a..ba6dde9 100644
+--- a/src/server/headless.rs
++++ b/src/server/headless.rs
+@@ -10169,40 +10169,48 @@ next_tab = ""
+             server.app.state.pane_borders = false;
+             server.app.state.pane_scrollbars = false;
+             server.resize_shared_runtime_to_effective_size();
+-            (server, rx, left)
++            (server, rx, left, right)
+         };
+-        let (mut retained, retained_rx, retained_pane) = make_server();
+-        let (mut full, full_rx, full_pane) = make_server();
+-        retained.render_and_stream();
+-        retained_rx
+-            .recv_timeout(Duration::from_millis(100))
+-            .unwrap();
+-        full.render_and_stream();
+-        full_rx.recv_timeout(Duration::from_millis(100)).unwrap();
+-
+-        let update = b"\r\x1b[44mZ\x1b[0mQ";
+-        retained
+-            .app
+-            .state
+-            .runtime_for_pane_in_workspace(&retained.app.terminal_runtimes, 0, retained_pane)
+-            .unwrap()
+-            .test_process_pty_bytes(update);
+-        full.app
+-            .state
+-            .runtime_for_pane_in_workspace(&full.app.terminal_runtimes, 0, full_pane)
+-            .unwrap()
+-            .test_process_pty_bytes(update);
+-
+-        assert!(retained.render_retained_pty_update_and_stream());
+-        full.render_and_stream();
+-        let retained_frame = read_server_frame(
++        // The focused and unfocused panes use different surfaces, so check both.
++        for update_focused in [true, false] {
++            let (mut retained, retained_rx, retained_left, retained_right) = make_server();
++            let (mut full, full_rx, full_left, full_right) = make_server();
++            let (retained_pane, full_pane) = if update_focused {
++                (retained_left, full_left)
++            } else {
++                (retained_right, full_right)
++            };
++            retained.render_and_stream();
+             retained_rx
+                 .recv_timeout(Duration::from_millis(100))
+-                .unwrap(),
+-        );
+-        let full_frame =
+-            read_server_frame(full_rx.recv_timeout(Duration::from_millis(100)).unwrap());
+-        assert_frame_data_eq(&retained_frame, &full_frame);
++                .unwrap();
++            full.render_and_stream();
++            full_rx.recv_timeout(Duration::from_millis(100)).unwrap();
++
++            let update = b"\r\x1b[44mZ\x1b[0mQ";
++            retained
++                .app
++                .state
++                .runtime_for_pane_in_workspace(&retained.app.terminal_runtimes, 0, retained_pane)
++                .unwrap()
++                .test_process_pty_bytes(update);
++            full.app
++                .state
++                .runtime_for_pane_in_workspace(&full.app.terminal_runtimes, 0, full_pane)
++                .unwrap()
++                .test_process_pty_bytes(update);
++
++            assert!(retained.render_retained_pty_update_and_stream());
++            full.render_and_stream();
++            let retained_frame = read_server_frame(
++                retained_rx
++                    .recv_timeout(Duration::from_millis(100))
++                    .unwrap(),
++            );
++            let full_frame =
++                read_server_frame(full_rx.recv_timeout(Duration::from_millis(100)).unwrap());
++            assert_frame_data_eq(&retained_frame, &full_frame);
++        }
+     }
+ 
+     #[tokio::test]
+diff --git a/src/ui/panes.rs b/src/ui/panes.rs
+index 8537067..eb6adc1 100644
+--- a/src/ui/panes.rs
++++ b/src/ui/panes.rs
+@@ -344,10 +344,28 @@ pub(super) fn compute_pane_infos(
+ // no alpha, so WezTerm maps this palette index to a translucent gray.
+ pub(super) const FOCUSED_PANE_BACKGROUND: Color = Color::Indexed(235);
+ 
++// Unfocused panes sit on the lighter surface that inactive tabs use, so they
++// stand apart from the window background while the focused pane stays darkest.
++pub(super) const INACTIVE_PANE_BACKGROUND: Color = Color::Indexed(236);
++
+ // Keep full redraws and retained terminal updates on the same focus rule.
+ // A single pane is shaded too, so every tab shows the same focused surface.
+ pub(crate) fn focused_pane_background(info: &PaneInfo) -> Option<Color> {
+-    info.is_focused.then_some(FOCUSED_PANE_BACKGROUND)
++    Some(if info.is_focused {
++        FOCUSED_PANE_BACKGROUND
++    } else {
++        INACTIVE_PANE_BACKGROUND
++    })
++}
++
++// The corner font bakes each surface color into its glyphs, so the unfocused
++// surface has its own four corners in the plane-16 private-use area.
++fn pane_corner_symbols(background: Color) -> [&'static str; 4] {
++    if background == INACTIVE_PANE_BACKGROUND {
++        ["\u{10f004}", "\u{10f005}", "\u{10f006}", "\u{10f007}"]
++    } else {
++        ["\u{1fbee}", "\u{1fbed}", "\u{1fbec}", "\u{1fbef}"]
++    }
+ }
+ 
+ // Padding belongs to the pane, so moving focus never resizes a terminal.
+@@ -373,11 +391,12 @@ fn render_focused_pane_background(
+     if padded {
+         // Filled quarter circles occupy padding, never application content.
+         // The small Herdr Pane Corners font supplies these Unicode 16 glyphs.
++        let [top_left, top_right, bottom_left, bottom_right] = pane_corner_symbols(background);
+         for (x, y, symbol) in [
+-            (surface.x, surface.y, "\u{1fbee}"),
+-            (surface.right() - 1, surface.y, "\u{1fbed}"),
+-            (surface.x, surface.bottom() - 1, "\u{1fbec}"),
+-            (surface.right() - 1, surface.bottom() - 1, "\u{1fbef}"),
++            (surface.x, surface.y, top_left),
++            (surface.right() - 1, surface.y, top_right),
++            (surface.x, surface.bottom() - 1, bottom_left),
++            (surface.right() - 1, surface.bottom() - 1, bottom_right),
+         ] {
+             if x >= area.x && x < area.right() && y >= area.y && y < area.bottom() {
+                 buf[(x, y)]
+@@ -1121,7 +1140,7 @@ mod tests {
+                 let expected = if info.id == focused {
+                     FOCUSED_PANE_BACKGROUND
+                 } else {
+-                    Color::Reset
++                    INACTIVE_PANE_BACKGROUND
+                 };
+                 assert_eq!(buffer[(x + 1, 0)].bg, expected);
+                 assert_eq!(buffer[(x + 1, 1)].bg, expected);
+@@ -1179,22 +1198,26 @@ mod tests {
+                 assert_eq!(buffer[(x + 2, 1)].symbol(), "X");
+                 assert_eq!(buffer[(x + 2, 1)].bg, Color::Rgb(20, 40, 60));
+                 assert_eq!(buffer[(x, 0)].bg, Color::Reset);
+-                if info.id == focused {
+-                    for (cx, cy, symbol) in [
+-                        (x, 0, "\u{1fbee}"),
+-                        (x + 15, 0, "\u{1fbed}"),
+-                        (x, 7, "\u{1fbec}"),
+-                        (x + 15, 7, "\u{1fbef}"),
+-                    ] {
+-                        assert_eq!(buffer[(cx, cy)].symbol(), symbol);
+-                        assert_eq!(buffer[(cx, cy)].bg, Color::Reset);
+-                        assert_eq!(buffer[(cx, cy)].fg, FOCUSED_PANE_BACKGROUND);
+-                    }
+-                    assert_eq!(buffer[(x + 1, 0)].bg, FOCUSED_PANE_BACKGROUND);
++                let (background, symbols) = if info.id == focused {
++                    (
++                        FOCUSED_PANE_BACKGROUND,
++                        ["\u{1fbee}", "\u{1fbed}", "\u{1fbec}", "\u{1fbef}"],
++                    )
+                 } else {
+-                    assert_eq!(buffer[(x, 0)].symbol(), " ");
+-                    assert_eq!(buffer[(x + 1, 0)].bg, Color::Reset);
++                    (
++                        INACTIVE_PANE_BACKGROUND,
++                        ["\u{10f004}", "\u{10f005}", "\u{10f006}", "\u{10f007}"],
++                    )
++                };
++                for ((cx, cy), symbol) in [(x, 0), (x + 15, 0), (x, 7), (x + 15, 7)]
++                    .into_iter()
++                    .zip(symbols)
++                {
++                    assert_eq!(buffer[(cx, cy)].symbol(), symbol);
++                    assert_eq!(buffer[(cx, cy)].bg, Color::Reset);
++                    assert_eq!(buffer[(cx, cy)].fg, background);
+                 }
++                assert_eq!(buffer[(x + 1, 0)].bg, background);
+             }
+             // Background tabs and visible tabs must give PTYs identical geometry.
+             resize_tab_panes(
+@@ -1229,11 +1252,7 @@ mod tests {
+         let root = workspace.tabs[0].root_pane;
+         workspace.insert_test_runtime(
+             root,
+-            TerminalRuntime::test_with_screen_bytes(
+-                12,
+-                6,
+-                b"\x1b[48;2;20;40;60mX\x1b[0m plain",
+-            ),
++            TerminalRuntime::test_with_screen_bytes(12, 6, b"\x1b[48;2;20;40;60mX\x1b[0m plain"),
+         );
+         app.workspaces = vec![workspace];
+         app.active = Some(0);
